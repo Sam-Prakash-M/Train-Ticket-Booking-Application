@@ -1,3 +1,4 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,6 +31,29 @@
     <h2>🚆 Create Account</h2>
     <p class="subtitle">Join the Railway Booking Portal</p>
 
+    <!-- JSP message display section -->
+    <%
+        String message = (String) request.getAttribute("message");
+        if (message != null) {
+    %>
+        <p style="color: red; text-align: center;"><%= message %></p>
+    <%
+        }
+        if ("success".equals(request.getParameter("status"))) {
+    %>
+        <p style="color: green; text-align: center;">Registration successful! Please log in.</p>
+    <%
+        } else if ("exists".equals(request.getParameter("error"))) {
+    %>
+        <p style="color: red; text-align: center;">If Your are the User.! Please log in instead. Or Use Different UserName</p>
+    <%
+        } else if ("failed".equals(request.getParameter("error"))) {
+    %>
+        <p style="color: red; text-align: center;">Something went wrong. Please try again.</p>
+    <%
+        }
+    %>
+
     <form action="RegisterServlet" method="post" class="form">
       <div class="input-container">
         <input type="text" name="fullname" id="fullname" required />
@@ -54,7 +78,7 @@
       <button type="submit" class="register-btn">Register</button>
 
       <p class="login-text">
-        Already have an account? <a href="login.html">Login Here</a>
+        Already have an account? <a href="login.jsp">Login Here</a>
       </p>
     </form>
   </div>

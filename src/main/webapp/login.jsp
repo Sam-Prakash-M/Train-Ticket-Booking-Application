@@ -1,3 +1,4 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,6 +30,27 @@
   <div class="login-card">
     <h2>🚆 Railway Booking</h2>
     <p class="subtitle">Welcome back! Please log in</p>
+
+    <!-- Dynamic message section -->
+    <%
+        String message = (String) request.getAttribute("message");
+        if (message != null) {
+    %>
+        <p style="color: red; text-align: center;"><%= message %></p>
+    <%
+        }
+        if ("true".equals(request.getParameter("registered"))) {
+    %>
+        <p style="color: green; text-align: center;">Registration successful! Please log in.</p>
+    <%
+        }
+        if ("mismatch".equals(request.getParameter("error"))) {
+    %>
+        <p style="color: red; text-align: center;">Please Enter Valid Username and Password.</p>
+    <%
+        }
+    %>
+
     <form action="LoginServlet" method="post" class="form">
       <div class="input-container">
         <input type="text" name="username" id="username" required />
@@ -39,7 +61,7 @@
         <label for="password">Password</label>
       </div>
       <button type="submit" class="login-btn">Login</button>
-      <p class="register-text">Don’t have an account? <a href="register.html">Register Now</a></p>
+      <p class="register-text">Don’t have an account? <a href="register.jsp">Register Now</a></p>
     </form>
   </div>
 
