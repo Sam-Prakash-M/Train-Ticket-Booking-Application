@@ -3,17 +3,20 @@ package com.samprakash.repository;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
+import java.util.List;
 import java.util.Properties;
 
 import org.bson.Document;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import com.samprakash.basemodel.TrainBookingCollections;
+import com.samprakash.basemodel.TrainBookingDatabase;
 import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
@@ -68,14 +71,14 @@ public class DataBaseConnector {
 			MongoDatabase trainBookingDataBase = mongoClient
 					.getDatabase(DB_PROPERTIES.getProperty("Db.TrainBooking.name", ""));
 
-			MongoCollection<Document> allUsersCollection = trainBookingDataBase
-					.getCollection(TrainBookingCollections.USERS.name());
+			MongoCollection<Document> allUserDocument = trainBookingDataBase
+					.getCollection(TrainBookingDatabase.USERS.name());
 			Document newUserDocument = new Document(UserCollection.FULL_NAME.name(), newUser.fullName())
 					.append(UserCollection.EMAIL.name(), newUser.email())
 					.append(UserCollection.USER_NAME.name(), newUser.userName())
 					.append(UserCollection.HASHED_PASSWORD.name(), newUser.hashedPassword());
 
-			allUsersCollection.insertOne(newUserDocument);
+			allUserDocument.insertOne(newUserDocument);
 		}
 
 		return true;
@@ -89,11 +92,11 @@ public class DataBaseConnector {
 			MongoDatabase trainBookingDataBase = mongoClient
 					.getDatabase(DB_PROPERTIES.getProperty("Db.TrainBooking.name", ""));
 
-			MongoCollection<Document> allUsersCollection = trainBookingDataBase
-					.getCollection(TrainBookingCollections.USERS.name());
+			MongoCollection<Document> allUserDocument = trainBookingDataBase
+					.getCollection(TrainBookingDatabase.USERS.name());
 			Document userDocument = new Document(UserCollection.USER_NAME.name(), userName);
 
-			return allUsersCollection.find(userDocument).iterator().hasNext();
+			return allUserDocument.find(userDocument).iterator().hasNext();
 		}
 
 	}
@@ -108,12 +111,12 @@ public class DataBaseConnector {
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty("Db.Url", ""))) {
 
 			MongoDatabase trainBookingDatabase = mongoClient
-					.getDatabase(DB_PROPERTIES.getProperty("Db.TrainBooking.name", password));
+					.getDatabase(DB_PROPERTIES.getProperty("Db.TrainBooking.name", ""));
 
-			MongoCollection<Document> allUserCollection = trainBookingDatabase
-					.getCollection(TrainBookingCollections.USERS.name());
+			MongoCollection<Document> allUserDocument = trainBookingDatabase
+					.getCollection(TrainBookingDatabase.USERS.name());
 
-			Document userDocument = allUserCollection.find(Filters.eq(UserCollection.USER_NAME.name(), userName))
+			Document userDocument = allUserDocument.find(Filters.eq(UserCollection.USER_NAME.name(), userName))
 					.first();
 
 			if (userDocument != null) {
@@ -128,6 +131,57 @@ public class DataBaseConnector {
 
 		}
 
+	}
+
+	public JSONArray getMatchedTrain(String fromStation, String toStation,String travelDate) {
+		
+		JSONArray matchedTrainList = new JSONArray();
+		
+		if(fromStation == null || toStation == null || travelDate == null) {
+			
+			System.out.println("Given fromStation ,toStation or travelDate is Null");
+			return matchedTrainList;
+		}
+		
+		
+		try(MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty("Db.Url",""))) {
+			
+			MongoDatabase trainBookingDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty("Db.TrainBooking.name",""));
+			
+			MongoCollection<Document> allTrainDocument = trainBookingDatabase.getCollection(TrainBookingDatabase.TRAIN_SCHEDULE.name());
+			
+			
+			FindIterable<Document> trainsOnDate = allTrainDocument.find(new Document("running_date",travelDate));
+			
+
+	        for (Document train : trainsOnDate) {
+	            List<Document> routes = (List<Document>) train.get("routes");
+
+	            int fromIndex = -1, toIndex = -1,routeSize = routes.size();
+
+	            // 3. Check if both stations exist in routes and order is valid
+	            for (int i = 0; i < routeSize; i++) {
+	                String stationName = routes.get(i).getString("station");
+	                if (stationName.equalsIgnoreCase(fromStation)) {
+	                    fromIndex = i;
+	                }
+	                if (stationName.equalsIgnoreCase(toStation)) {
+	                    toIndex = i;
+	                }
+	            }
+
+	            if (fromIndex != -1 && toIndex != -1 && fromIndex < toIndex) {
+	                matchedTrainList.put(new JSONObject(train.toJson()));
+	            }
+	        }
+	        
+	        return matchedTrainList;
+			
+			
+			
+		}
+		
+		
 	}
 
 }

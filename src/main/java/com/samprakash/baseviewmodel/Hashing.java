@@ -16,6 +16,11 @@ public class Hashing {
 	}
 
 	public static boolean isPlainPasswordMatchedWithHashedPassword(String plainPassword, String hashedPassword) {
+		
+		if(plainPassword == null || hashedPassword == null) {
+			System.out.println("Given PlainPassword or HashedPassword is null");
+			return false;
+		}
 
 		return BCrypt.checkpw(plainPassword, hashedPassword);
 	}
