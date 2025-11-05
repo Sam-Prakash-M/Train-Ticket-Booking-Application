@@ -1,0 +1,216 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  transition: background 0.8s, color 0.8s;
+}
+
+/* Dark & Light Modes */
+body.dark-mode {
+  background: linear-gradient(135deg, #0a0f1a, #1a273a);
+  color: #fff;
+}
+body.light-mode {
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  color: #000;
+}
+
+/* Loader */
+#loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #0a0f1a;
+  z-index: 10;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+#loader.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.train-loader {
+  width: 80px;
+  height: 30px;
+  background: linear-gradient(135deg, #ff8c00, #ffb347);
+  border-radius: 10px;
+  animation: trainLoading 1.8s linear infinite;
+  box-shadow: 0 0 15px #ffb347;
+}
+@keyframes trainLoading {
+  0%,100% { transform: translateX(-60px); }
+  50% { transform: translateX(60px); }
+}
+#loader p {
+  margin-top: 16px;
+  color: #ffb347;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.15);
+  padding: 10px 14px;
+  border-radius: 30px;
+  backdrop-filter: blur(10px);
+  transition: all 0.4s;
+  z-index: 5;
+}
+.theme-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255,140,0,0.6);
+}
+.theme-toggle .icon { font-size: 20px; }
+
+/* Background */
+.background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 20% 30%, #283e51, transparent 60%),
+              radial-gradient(circle at 80% 70%, #485563, transparent 60%);
+  filter: blur(60px);
+  animation: moveGradient 12s infinite alternate ease-in-out;
+  z-index: 0;
+}
+@keyframes moveGradient {
+  0% { transform: translate(0,0); }
+  100% { transform: translate(-30px,20px); }
+}
+
+/* Train Animation */
+.train-track {
+  position: absolute;
+  bottom: 20%;
+  width: 100%;
+  height: 2px;
+  background: rgba(255,255,255,0.1);
+  z-index: 1;
+}
+.train {
+  position: absolute;
+  bottom: calc(20% - 25px);
+  left: -100px;
+  width: 80px;
+  height: 30px;
+  background: linear-gradient(135deg, #ff8c00, #ffb347);
+  border-radius: 10px;
+  animation: trainMove 10s linear infinite;
+  box-shadow: 0 0 10px #ffb347;
+}
+@keyframes trainMove {
+  0% { left: -120px; }
+  100% { left: 110%; }
+}
+
+/* Register Card */
+.register-card {
+  position: relative;
+  z-index: 2;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 40px 35px;
+  width: 360px;
+  text-align: center;
+  animation: fadeIn 1.5s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.register-card h2 {
+  font-weight: 600;
+  color: #ffb347;
+  margin-bottom: 8px;
+}
+.subtitle {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 30px;
+}
+
+/* Input Fields */
+.input-container {
+  position: relative;
+  margin-bottom: 25px;
+}
+.input-container input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  outline: none;
+  background: transparent;
+  border-bottom: 2px solid rgba(255,255,255,0.3);
+  color: inherit;
+  font-size: 15px;
+  transition: 0.3s;
+}
+.input-container label {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  color: rgba(255,255,255,0.5);
+  font-size: 15px;
+  pointer-events: none;
+  transition: 0.3s;
+}
+.input-container input:focus + label,
+.input-container input:valid + label {
+  top: -10px;
+  font-size: 13px;
+  color: #ffb347;
+}
+
+/* Register Button */
+.register-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: linear-gradient(135deg, #ff8c00, #ffb347);
+  color: white;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+  box-shadow: 0 0 10px rgba(255,180,70,0.4);
+}
+.register-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(255,180,70,0.8);
+}
+
+/* Login Text */
+.login-text {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #bbb;
+}
+.login-text a {
+  color: #ffb347;
+  text-decoration: none;
+  font-weight: 600;
+}
+.login-text a:hover {
+  text-decoration: underline;
+}
