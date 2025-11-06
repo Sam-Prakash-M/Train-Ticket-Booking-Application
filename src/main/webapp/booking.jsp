@@ -1,60 +1,112 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="org.json.*,java.util.*" %>
+<%@ page contentType="text/html;charset=UTF-8" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Train Booking Availability</title>
-  <link rel="stylesheet" href="booking.css?v=5">
-  <script defer src="booking.js?v=5"></script>
+  <title>Train Booking Results</title>
+  <link rel="stylesheet" href="booking.css">
+  <script defer src="booking.js"></script>
 </head>
 <body>
-
-<div class="header">
-  <h2>Train Availability</h2>
-  <div class="date-navigation">
-    <button id="prevDate">⬅ Previous</button>
-    <span id="currentDate"><%= request.getAttribute("travelDate") %></span>
-    <button id="nextDate">Next ➡</button>
+  <!-- Loader Overlay -->
+  <div id="pageLoader" class="loader-overlay hidden">
+    <div class="spinner"></div>
+    <div class="loader-text">Loading trains…</div>
   </div>
-</div>
 
-<div id="loader" class="loader"></div>
+  <main class="container">
+    <h1 class="page-title">🚆 Available Trains</h1>
 
-<div id="trainContainer" class="train-container">
-  <%
-    org.json.JSONObject availability = (org.json.JSONObject) request.getAttribute("TrainSeatAvailability");
-    if (availability != null && availability.length() > 0) {
-        java.util.Iterator<String> trainKeys = availability.keys();
-        while (trainKeys.hasNext()) {
-            String trainID = trainKeys.next();
-            org.json.JSONObject trainObj = availability.getJSONObject(trainID);
-  %>
-      <div class="train-card">
-        <h3><%= trainID %></h3>
-        <div class="train-details">
-          <% 
-            java.util.Iterator<String> coachKeys = trainObj.keys();
-            while (coachKeys.hasNext()) {
-                String coach = coachKeys.next();
-                org.json.JSONObject coachObj = trainObj.getJSONObject(coach);
-          %>
-              <div class="coach-info">
-                <span class="coach-no"><%= coach %></span>
-                <span class="coach-class"><%= coachObj.getString("class") %></span>
-                <span class="available">Available: <%= coachObj.getInt("available_seats") %></span>
-                <span class="fare">Fare: ₹<%= coachObj.optInt("fare", 0) %></span>
-              </div>
-          <% } %>
+    <%
+      JSONArray matchedTrains = (JSONArray) request.getAttribute("MatchedTrainList");
+      Map<String,String> trainData = (Map<String,String>) request.getAttribute("TrainData");
+      JSONObject seatAvailability = (JSONObject) request.getAttribute("TrainSeatAvailability");
+      String source = (String) request.getAttribute("SourceStation");
+      String destination = (String) request.getAttribute("DestinationStation");
+    %>
+
+    <%
+      if (matchedTrains != null && matchedTrains.length() > 0) {
+        for (int i = 0; i < matchedTrains.length(); i++) {
+          JSONObject train = matchedTrains.getJSONObject(i);
+          String trainId = train.getString("train_id");
+          String trainName = trainData.get(trainId);
+          JSONObject farePerKm = train.getJSONObject("fare_per_km");
+
+          // Calculate distance between source and destination
+          JSONArray routes = train.getJSONArray("routes");
+          double srcDist = 0, destDist = 0;
+          for (int j = 0; j < routes.length(); j++) {
+            JSONObject stop = routes.getJSONObject(j);
+            if (stop.getString("station").equalsIgnoreCase(source)) {
+              srcDist = stop.getDouble("distance_from_start");
+            }
+            if (stop.getString("station").equalsIgnoreCase(destination)) {
+              destDist = stop.getDouble("distance_from_start");
+            }
+          }
+          double totalDistance = Math.abs(destDist - srcDist);
+
+          // Available days JSON for this train (used by JS to render day strip)
+          String availableDaysJson = train.getJSONArray("available_days").toString();
+    %>
+
+    <section class="train-card fade-in"
+             data-train-id="<%=trainId%>"
+             data-available-days='<%=availableDaysJson%>'>
+      <div class="train-header">
+        <div>
+          <h2><%=trainName%> (<%=trainId%>)</h2>
+          <p class="route"><%=source%> ➜ <%=destination%></p>
         </div>
-        <button class="book-btn">Book Now</button>
+        <div class="distance">Distance: <%= (int) totalDistance %> km</div>
       </div>
-  <% 
-        }
-    } else { 
-  %>
-    <p class="no-trains">No trains available for this date.</p>
-  <% } %>
-</div>
 
+      <!-- Day Strip (built by JS from data-available-days) -->
+      <div class="day-strip" id="days-<%=trainId%>"></div>
+
+      <!-- Coach/Class buttons (your original) -->
+      <div class="coach-buttons">
+        <% Iterator<String> it = farePerKm.keys();
+           while (it.hasNext()) {
+             String coach = it.next(); %>
+             <button class="coach-btn"
+                     data-train="<%=trainId%>"
+                     data-class="<%=coach%>"
+                     data-distance="<%=totalDistance%>"><%=coach%></button>
+        <% } %>
+      </div>
+
+      <div class="coach-details hidden" id="details-<%=trainId%>">
+        <p>Select a coach class to view availability and fare.</p>
+      </div>
+
+      <!-- Book Now + Other Dates -->
+      <div class="book-row">
+        <button class="btn ghost other-dates" data-train="<%=trainId%>">Other Dates</button>
+        <button class="btn book-now" data-train="<%=trainId%>" disabled>Book Now</button>
+      </div>
+    </section>
+
+    <% } } else { %>
+      <p class="no-trains">No trains found for your search.</p>
+    <% } %>
+  </main>
+
+  <!-- Server → Client data -->
+  <script>
+    const seatAvailabilityData = <%= seatAvailability.toString() %>;
+    const fareMap = {};
+    <% if (matchedTrains != null) {
+         for (int i = 0; i < matchedTrains.length(); i++) {
+           JSONObject train = matchedTrains.getJSONObject(i);
+           String id = train.getString("train_id");
+           JSONObject fare = train.getJSONObject("fare_per_km");
+    %>
+        fareMap["<%=id%>"] = <%=fare.toString()%>;
+    <%   }
+       } %>
+  </script>
 </body>
 </html>
