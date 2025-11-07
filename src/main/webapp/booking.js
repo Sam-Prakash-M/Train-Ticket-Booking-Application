@@ -1,118 +1,124 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const WEEK = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const WEEK_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
   const loader = document.getElementById("pageLoader");
-  const showLoader = (on) => loader.classList.toggle("hidden", !on);
+  const modal = document.getElementById("scheduleModal");
+  const closeBtn = modal.querySelector(".close-btn");
+  const scheduleTableBody = modal.querySelector("tbody");
+  const scheduleTrainName = document.getElementById("scheduleTrainName");
 
-  // Initial loader while page paints
+  const showLoader = (show) => loader.classList.toggle("hidden", !show);
+  const showModal = (show) => modal.classList.toggle("hidden", !show);
+
+  // ✅ Initial loading animation
   showLoader(true);
-  setTimeout(() => showLoader(false), 350);
+  setTimeout(() => showLoader(false), 400);
 
-  // ====== Build Day Strip for each train card ======
-  document.querySelectorAll(".train-card").forEach(card => {
-    const trainId = card.dataset.trainId;
-    const daysContainer = card.querySelector(".day-strip");
-    const available = new Set(JSON.parse(card.dataset.availableDays || "[]"));
-    const bookBtn = card.querySelector(".book-now");
+  // ✅ Train Schedule Modal
+  document.querySelectorAll(".schedule-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const card = btn.closest(".train-card");
+      const routes = JSON.parse(card.dataset.routes);
+      const title = card.querySelector("h2").textContent;
+      scheduleTrainName.textContent = title;
 
-    let selectedDay = null;
-    const todayFull = WEEK[new Date().getDay()];
-
-    WEEK.forEach((full, idx) => {
-      const pill = document.createElement("button");
-      pill.type = "button";
-      pill.className = "day-pill";
-      pill.textContent = WEEK_SHORT[idx];
-
-      const isAvailable = available.has(full);
-      if (!isAvailable) pill.classList.add("disabled");
-
-      // Default-select today's day if available; otherwise first available later
-      if (selectedDay === null && isAvailable && full === todayFull) {
-        pill.classList.add("selected");
-        selectedDay = full;
-      }
-
-      pill.addEventListener("click", () => {
-        if (pill.classList.contains("disabled")) return;
-        daysContainer.querySelectorAll(".day-pill").forEach(p => p.classList.remove("selected"));
-        pill.classList.add("selected");
-        selectedDay = full;
-        bookBtn.disabled = false;
-      });
-
-      daysContainer.appendChild(pill);
-    });
-
-    // If we didn't select anything (today unavailable), select first available
-    if (!selectedDay) {
-      const firstAvail = WEEK.find(d => available.has(d));
-      if (firstAvail) {
-        const idx = WEEK.indexOf(firstAvail);
-        daysContainer.children[idx].classList.add("selected");
-        selectedDay = firstAvail;
-        bookBtn.disabled = false;
-      } else {
-        // No days available at all
-        bookBtn.disabled = true;
-      }
-    }
-
-    // Book Now click → show loader and (for now) alert (wire to your servlet later)
-    bookBtn.addEventListener("click", () => {
-      if (!selectedDay) return;
-      showLoader(true);
-      setTimeout(() => {
-        showLoader(false);
-        alert(`Proceeding to book ${trainId} on ${selectedDay}`);
-        // TODO: window.location.href = `BookServlet?trainId=${encodeURIComponent(trainId)}&day=${encodeURIComponent(selectedDay)}`;
-      }, 600);
-    });
-
-    // Other Dates (demo: quick loader)
-    const otherDatesBtn = card.querySelector(".other-dates");
-    otherDatesBtn?.addEventListener("click", () => {
-      showLoader(true);
-      setTimeout(() => showLoader(false), 400);
+      scheduleTableBody.innerHTML = routes.map(r =>
+        `<tr>
+          <td>${r.station}</td>
+          <td>${r.arrival}</td>
+          <td>${r.departure}</td>
+          <td>${r.distance_from_start}</td>
+        </tr>`
+      ).join("");
+      showModal(true);
     });
   });
 
-  // ====== Your existing coach selection logic (kept, with small tweaks) ======
-  const coachButtons = document.querySelectorAll(".coach-btn");
+  closeBtn.addEventListener("click", () => showModal(false));
+  modal.addEventListener("click", e => { if (e.target === modal) showModal(false); });
 
-  coachButtons.forEach(btn => {
+  // ✅ Handle seat class selection & enable Book Now
+  document.querySelectorAll(".coach-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const trainId = btn.dataset.train;
       const coachClass = btn.dataset.class;
       const distance = parseFloat(btn.dataset.distance);
       const detailsDiv = document.getElementById(`details-${trainId}`);
+      const card = btn.closest(".train-card");
+      const bookBtn = card.querySelector(".book-now");
+      const source = card.querySelector(".route").textContent.split("➜")[0].trim();
+      const destination = card.querySelector(".route").textContent.split("➜")[1].trim();
 
       const trainData = seatAvailabilityData[trainId];
       if (!trainData) return;
 
-      // Sum all seats for the chosen class across coaches
       const matchingCoaches = Object.values(trainData).filter(c => c.class === coachClass);
-      let totalSeats = 0;
-      matchingCoaches.forEach(c => totalSeats += (c.available_seats || 0));
-
+      const totalSeats = matchingCoaches.reduce((sum, c) => sum + (c.available_seats || 0), 0);
       const farePerKm = fareMap[trainId]?.[coachClass];
-      if (matchingCoaches.length > 0 && typeof farePerKm === "number") {
-        const totalFare = (farePerKm * distance).toFixed(2);
-        detailsDiv.innerHTML = `
-          <p><strong>Class:</strong> ${coachClass}</p>
-          <p><strong>Total Coaches:</strong> ${matchingCoaches.length}</p>
-          <p><strong>Total Available Seats:</strong> ${totalSeats}</p>
-          <p><strong>Fare:</strong> ₹${totalFare}</p>
-          <p style="font-size:0.9rem;color:#777;">(Distance: ${distance} km × ₹${farePerKm}/km)</p>
-        `;
-      } else {
-        detailsDiv.innerHTML = `<p style="color:#999;">No data found for ${coachClass}</p>`;
-      }
+      const totalFare = (farePerKm * distance).toFixed(2);
 
+      detailsDiv.innerHTML = `
+        <p><strong>Class:</strong> ${coachClass}</p>
+        <p><strong>Total Coaches:</strong> ${matchingCoaches.length}</p>
+        <p><strong>Total Available Seats:</strong> ${totalSeats}</p>
+        <p><strong>Fare:</strong> ₹${totalFare}</p>
+        <p style="color:#777;font-size:0.9rem;">(Distance: ${distance} km × ₹${farePerKm}/km)</p>
+      `;
       detailsDiv.classList.remove("hidden");
-      detailsDiv.classList.add("show");
-      detailsDiv.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      // ✅ Enable Book Now
+      bookBtn.disabled = false;
+      // ✅ Store data in button for redirect
+      bookBtn.dataset.selectedClass = coachClass;
+      bookBtn.dataset.totalFare = totalFare;
+      bookBtn.dataset.source = source;
+      bookBtn.dataset.destination = destination;
     });
   });
+
+  // ✅ Redirect to BookingServlet on click
+  document.querySelectorAll(".book-now").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const trainId = btn.dataset.train;
+      const selectedClass = btn.dataset.selectedClass;
+      const totalFare = btn.dataset.totalFare;
+      const source = btn.dataset.source;
+      const destination = btn.dataset.destination;
+
+      if (!selectedClass) {
+        alert("Please select a class before booking!");
+        return;
+      }
+
+      showLoader(true);
+
+      setTimeout(() => {
+        showLoader(false);
+
+        // ✅ Create a hidden form to send POST request
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "BookingServlet";
+
+        const params = {
+          trainId,
+          classType: selectedClass,
+          source,
+          destination,
+          fare: totalFare
+        };
+
+        // Dynamically append hidden input fields
+        for (const key in params) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = params[key];
+          form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit(); // 🚀 Send via POST
+      }, 600);
+    });
+  });
+
 });
