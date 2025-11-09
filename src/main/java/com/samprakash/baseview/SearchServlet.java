@@ -9,6 +9,7 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.samprakash.baseviewmodel.TrainDataFetcher;
 import com.samprakash.repository.DataBaseConnector;
 
 import jakarta.servlet.RequestDispatcher;
@@ -36,19 +37,22 @@ public class SearchServlet extends HttpServlet {
 		LocalDate travelDate = LocalDate.parse(request.getParameter("travelDate"));
 
 		String dayName = travelDate.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+		
+		TrainDataFetcher trainDataFetcher = new TrainDataFetcher(fromStation,toStation,dayName);
 
-		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
-
-		JSONArray matchedTrainList = dataBaseConnector.getMatchedTrain(fromStation, toStation, dayName);
+	
+		JSONArray matchedTrainList = trainDataFetcher.getMatchedTrain();
 
 		for (int i = 0; i < matchedTrainList.length(); i++) {
 
 			System.out.println(matchedTrainList.getJSONObject(i).toString());
 		}
 
-		JSONObject trainSeatAvailability = dataBaseConnector.getSeatAvailabilityForTrain(matchedTrainList);
+		
+		JSONObject trainSeatAvailability = TrainDataFetcher.getSeatAvailabilityForTrain(matchedTrainList);
 
-		Map<String, String> trainData = dataBaseConnector.getTrainNameByID(matchedTrainList);
+		Map<String, String> trainData = TrainDataFetcher.getTrainNameByID(matchedTrainList);
+		
 		request.setAttribute("SourceStation", fromStation);
 		request.setAttribute("DestinationStation", toStation);
 		request.setAttribute("MatchedTrainList", matchedTrainList);

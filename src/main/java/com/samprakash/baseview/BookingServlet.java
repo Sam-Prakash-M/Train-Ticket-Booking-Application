@@ -20,7 +20,7 @@ public class BookingServlet extends HttpServlet {
 	
 	@Override
 	public void doPost(HttpServletRequest request,HttpServletResponse response) {
-		 String trainId = request.getParameter("trainId");
+		   String trainId = request.getParameter("trainId");
 	        String classType = request.getParameter("classType");
 	        String source = request.getParameter("source");
 	        String destination = request.getParameter("destination");
