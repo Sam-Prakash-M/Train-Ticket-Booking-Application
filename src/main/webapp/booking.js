@@ -120,5 +120,61 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 600);
     });
   });
+  
+  const swapBtn = document.getElementById("swapBtn");
+  const from = document.getElementById("searchFrom");
+  const to = document.getElementById("searchTo");
+
+  swapBtn.addEventListener("click", () => {
+      let temp = from.value;
+      from.value = to.value;
+      to.value = temp;
+
+      swapBtn.classList.add("swap-anim");
+      setTimeout(() => swapBtn.classList.remove("swap-anim"), 300);
+  });
+  
+  const prevBtn = document.getElementById("prevDay");
+    const nextBtn = document.getElementById("nextDay");
+    const modifyForm = document.getElementById("modifySearchForm");
+    const dateInput = document.getElementById("searchDate");
+
+    if (prevBtn && nextBtn && dateInput && modifyForm) {
+
+        function updateButtons() {
+            const minDate = new Date(dateInput.min);
+            const maxDate = new Date(dateInput.max);
+            const current = new Date(dateInput.value);
+
+            prevBtn.disabled = current <= minDate;
+            nextBtn.disabled = current >= maxDate;
+
+            prevBtn.classList.toggle("disabled", prevBtn.disabled);
+            nextBtn.classList.toggle("disabled", nextBtn.disabled);
+        }
+
+        function changeDate(offset) {
+            const minDate = new Date(dateInput.min);
+            const maxDate = new Date(dateInput.max);
+            let current = new Date(dateInput.value);
+
+            current.setDate(current.getDate() + offset);
+            if (current < minDate) current = minDate;
+            if (current > maxDate) current = maxDate;
+
+            dateInput.value = current.toISOString().split("T")[0];
+            updateButtons();
+            modifyForm.submit();
+        }
+
+        prevBtn.addEventListener("click", () => changeDate(-1));
+        nextBtn.addEventListener("click", () => changeDate(1));
+
+        updateButtons();
+    }
+
 
 });
+
+
+
