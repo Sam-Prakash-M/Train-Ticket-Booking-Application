@@ -25,6 +25,8 @@ import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
 
+
+
 public class DataBaseConnector {
 
 	private static final DataBaseConnector DATA_BASE_CONNECTOR;
@@ -32,7 +34,7 @@ public class DataBaseConnector {
 	private final Properties DB_PROPERTIES;
 
 	private final String MONGO_DB_CONNECTION_URL, TRAIN_BOOKING_DB_NAME;
-	private final String TRAIN_ID, DATE,TRAIN_NAME,AVAILABLE_DAY;
+	private final String TRAIN_ID, DATE,TRAIN_NAME,AVAILABLE_DAYS;
 
 	static {
 
@@ -53,7 +55,7 @@ public class DataBaseConnector {
 		TRAIN_ID = "train_id";
 		DATE = "date";
 		TRAIN_NAME = "train_name";
-		AVAILABLE_DAY = "available_days";
+		AVAILABLE_DAYS = "available_days";
 
 		try (InputStream is = getClass().getClassLoader().getResourceAsStream("mongodb.properties")) {
 
@@ -217,10 +219,9 @@ public class DataBaseConnector {
 	        for (int i = 0; i < matchedTrainList.length(); i++) {
 	            JSONObject trainObj = matchedTrainList.getJSONObject(i);
 	            String trainID = trainObj.optString(TRAIN_ID, "");
-	            String travelDate = trainObj.optString(DATE, "");
 	            
-	          //  System.out.println("Travel Date : "+travelDate);
-
+	            JSONArray availableWeekDays = trainObj.optJSONArray(AVAILABLE_DAYS);
+	            
 	            AggregateIterable<Document> result = availabilityCollection.aggregate(Arrays.asList(
 	                    new Document("$match", new Document(TRAIN_ID, trainID)),
 	                    new Document("$unwind", "$coaches"),
@@ -232,7 +233,8 @@ public class DataBaseConnector {
 	            ));
 
 	            JSONObject trainJson = new JSONObject();
-
+	          // trainJson.put(AVAILABLE_DAYS,availableWeekDays);
+	        
 	            for (Document doc : result) {
 	                Document idDoc = doc.get("_id", Document.class);
 	                String coachNo = idDoc.getString("coach_no");
@@ -240,13 +242,14 @@ public class DataBaseConnector {
 	                int availableSeats = doc.getInteger("available_seats", 0);
 
 	                JSONObject coachJson = new JSONObject();
-	                coachJson.put("class", coachClass);
+	                coachJson.put("class", coachClass);	
 	                coachJson.put("available_seats", availableSeats);
 
 	                trainJson.put(coachNo, coachJson);
 	            }
-
+	            System.out.println("Printed " +trainJson.toString());
 	            availabilityJson.put(trainID, trainJson);
+	       
 	        }
 
 	    } catch (Exception e) {

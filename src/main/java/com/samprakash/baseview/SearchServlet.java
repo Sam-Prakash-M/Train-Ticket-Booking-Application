@@ -9,6 +9,7 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.samprakash.baseviewmodel.TrainDataFetcher;
 import com.samprakash.repository.DataBaseConnector;
 
 import jakarta.servlet.RequestDispatcher;
@@ -21,6 +22,11 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet("/SearchServlet")
 public class SearchServlet extends HttpServlet {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response) {
 
@@ -29,35 +35,41 @@ public class SearchServlet extends HttpServlet {
 		String toStation = request.getParameter("toStation");
 
 		LocalDate travelDate = LocalDate.parse(request.getParameter("travelDate"));
-		
+
 		String dayName = travelDate.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+		
+		TrainDataFetcher trainDataFetcher = new TrainDataFetcher(fromStation,toStation,dayName);
 
-		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
+	
+		JSONArray matchedTrainList = trainDataFetcher.getMatchedTrain();
 
-		JSONArray matchedTrainList = dataBaseConnector.getMatchedTrain(fromStation, toStation,dayName);
+		for (int i = 0; i < matchedTrainList.length(); i++) {
 
-		/*
-		 * for (int i = 0; i < matchedTrainList.length(); i++) {
-		 * 
-		 * System.out.println(matchedTrainList.getJSONObject(i).toString()); }
-		 */
-		
-	   JSONObject trainSeatAvailability = dataBaseConnector.getSeatAvailabilityForTrain(matchedTrainList);
-	   
-	   Map<String,String> trainData = dataBaseConnector.getTrainNameByID(matchedTrainList);
-		
-		request.setAttribute("TrainDate", trainData);
-		request.setAttribute("TrainSeatAvailability", trainSeatAvailability);
-		
-		System.out.println(trainSeatAvailability.toString());
-		
-		RequestDispatcher requestDispatcher = request.getRequestDispatcher("booking.jsp"); 
-		
-		try {	
-			requestDispatcher.forward(request,response);
+			System.out.println(matchedTrainList.getJSONObject(i).toString());
 		}
-		 catch (IOException | ServletException e) {
-			
+
+		
+		JSONObject trainSeatAvailability = TrainDataFetcher.getSeatAvailabilityForTrain(matchedTrainList);
+
+		Map<String, String> trainData = TrainDataFetcher.getTrainNameByID(matchedTrainList);
+		
+		request.setAttribute("SourceStation", fromStation);
+		request.setAttribute("DestinationStation", toStation);
+		request.setAttribute("MatchedTrainList", matchedTrainList);
+		request.setAttribute("TrainData", trainData);
+		request.setAttribute("TrainSeatAvailability", trainSeatAvailability);
+
+		System.out.println("Train Seat Availability\n"+trainSeatAvailability.toString());
+		
+		System.out.println("Train Data ");
+		System.out.println(trainData);
+
+		RequestDispatcher requestDispatcher = request.getRequestDispatcher("booking.jsp");
+
+		try {
+			requestDispatcher.forward(request, response);
+		} catch (IOException | ServletException e) {
+
 			e.printStackTrace();
 		}
 
