@@ -38,7 +38,7 @@ public class BookingServlet extends HttpServlet {
 	        request.setAttribute("destination", destination);
 	        request.setAttribute("fare", fare);
 
-	        RequestDispatcher rd = request.getRequestDispatcher("confirmation.jsp");
+	        RequestDispatcher rd = request.getRequestDispatcher("Confirmation.jsp");
 	        try {
 				rd.forward(request, response);
 			} catch (ServletException e) {
