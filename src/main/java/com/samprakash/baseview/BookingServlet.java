@@ -20,33 +20,45 @@ public class BookingServlet extends HttpServlet {
 	
 	@Override
 	public void doPost(HttpServletRequest request,HttpServletResponse response) {
-		   String trainId = request.getParameter("trainId");
-	        String classType = request.getParameter("classType");
-	        String source = request.getParameter("source");
-	        String destination = request.getParameter("destination");
-	        String fare = request.getParameter("fare");
+	    String trainId = request.getParameter("trainId");
+	    String trainName = request.getParameter("trainName");
+	    String classType = request.getParameter("classType");
+	    String source = request.getParameter("source");
+	    String destination = request.getParameter("destination");
+	    String fare = request.getParameter("fare");
 
-	        System.out.println("Secure Booking:");
-	        System.out.println("Train: " + trainId + " | Class: " + classType);
-	        System.out.println("From: " + source + " ➜ " + destination);
-	        System.out.println("Fare: ₹" + fare);
+	    // NEW ARRIVAL/DEPARTURE FIELDS
+	    String sourceArrival = request.getParameter("sourceArrival");
+	    String sourceDeparture = request.getParameter("sourceDeparture");
+	    String destinationArrival = request.getParameter("destinationArrival");
+	    String destinationDeparture = request.getParameter("destinationDeparture");
 
-	        // Forward to confirmation page
-	        request.setAttribute("trainId", trainId);
-	        request.setAttribute("classType", classType);
-	        request.setAttribute("source", source);
-	        request.setAttribute("destination", destination);
-	        request.setAttribute("fare", fare);
+	    System.out.println("Secure Booking:");
+	    System.out.println(trainName + " ("+ trainId + ")");
+	    System.out.println("From: " + source + " ("+sourceDeparture+") ➜ "
+	                       + destination + " ("+destinationArrival+")");
+	    System.out.println("Fare: ₹" + fare);
 
+	    // SET ATTRIBUTES FOR CONFIRMATION PAGE
+	    request.setAttribute("trainId", trainId);
+	    request.setAttribute("trainName", trainName);
+	    request.setAttribute("classType", classType);
+	    request.setAttribute("source", source);
+	    request.setAttribute("destination", destination);
+	    request.setAttribute("fare", fare);
+
+	    // NEW VALUES
+	    request.setAttribute("sourceArrival", sourceArrival);
+	    request.setAttribute("sourceDeparture", sourceDeparture);
+	    request.setAttribute("destinationArrival", destinationArrival);
+	    request.setAttribute("destinationDeparture", destinationDeparture);
+
+	    try {
 	        RequestDispatcher rd = request.getRequestDispatcher("Confirmation.jsp");
-	        try {
-				rd.forward(request, response);
-			} catch (ServletException e) {
-				
-				e.printStackTrace();
-			} catch (IOException e) {
-				
-				e.printStackTrace();
-			}
+	        rd.forward(request, response);
+	    } catch (IOException | ServletException e) {
+	        e.printStackTrace();
+	    }
 	}
+
 }
