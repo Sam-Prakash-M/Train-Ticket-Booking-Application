@@ -1,57 +1,94 @@
 package com.samprakash.paymentview.razorpayview;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.util.Properties;
+
+import org.json.JSONObject;
 
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
-import org.json.JSONObject;
+import com.razorpay.RazorpayException;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@WebServlet("/createOrder")
+@WebServlet("/RazorPayPayment")
 public class RazorPayClientView extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
 
+    private static final Properties RAZOR_PAY_PROPERTIES = new Properties();
+
+    static {
+        try (InputStream inputStream =
+                RazorPayClientView.class.getClassLoader()
+                        .getResourceAsStream("razorpayprops.properties")) {
+
+            if (inputStream == null) {
+                throw new RuntimeException("❌ razorpayprops.properties not found!");
+            }
+
+            RAZOR_PAY_PROPERTIES.load(inputStream);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Error loading Razorpay properties", e);
+        }
+    }
+
     @Override
-    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void doGet(HttpServletRequest request, HttpServletResponse response) {
 
-        response.setContentType("application/json");
-        PrintWriter out = response.getWriter();
+        response.setContentType("application/json; charset=UTF-8");
 
-        try {
-            // 1. Read amount from request (frontend sends in rupees)
-            String amountStr = request.getParameter("amount");  
-            int amount = Integer.parseInt(amountStr) * 100;   // convert to paise
+        try (PrintWriter out = response.getWriter()) {
 
-            // 2. Create Razorpay client
-            RazorpayClient client = new RazorpayClient(
-                    "YOUR_KEY_ID",
-                    "YOUR_KEY_SECRET"
-            );
+            String amountStr = request.getParameter("amount");
 
-            // 3. Order request body
+            if (amountStr == null || amountStr.isEmpty()) {
+                response.setStatus(400);
+                out.print("{\"error\":\"Amount missing\"}");
+                return;
+            }
+
+            // Convert rupees → paise safely
+            int amountPaise = new BigDecimal(amountStr)
+                    .multiply(new BigDecimal("100"))
+                    .intValueExact();
+
+            String key = RAZOR_PAY_PROPERTIES.getProperty("razorpay.key");
+            String secret = RAZOR_PAY_PROPERTIES.getProperty("razorpay.secret");
+
+            if (key == null || secret == null) {
+                response.setStatus(500);
+                out.print("{\"error\":\"Razorpay API Key/Secret missing\"}");
+                return;
+            }
+
+            RazorpayClient client = new RazorpayClient(key, secret);
+
+            // Build order request
             JSONObject orderRequest = new JSONObject();
-            orderRequest.put("amount", amount);
+            orderRequest.put("amount", amountPaise);
             orderRequest.put("currency", "INR");
             orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
 
-            // 4. Create order
+            // Create order
             Order order = client.orders.create(orderRequest);
 
-            // 5. Send order details to frontend
-            JSONObject orderJson = new JSONObject(order.toString());
+            // Return JSON
+            out.print(order.toString());
 
-            out.print(orderJson.toString());
-            out.flush();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            out.print("{\"error\":\"" + e.getMessage() + "\"}");
+        } catch (IOException | RazorpayException e) {
+			
+			e.printStackTrace();
+		} 
+        catch(Exception e) {
+        	e.printStackTrace();
         }
     }
 }

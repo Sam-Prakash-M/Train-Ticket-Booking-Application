@@ -1,133 +1,195 @@
-/* Smooth fade animation */
-@keyframes fadeAnim {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in {
-    animation: fadeAnim 0.8s ease forwards;
-}
+/* ---------------- GLOBALS ---------------- */
 
 body {
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     font-family: 'Poppins', sans-serif;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
-}
-
-.page-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.payment-card {
-    width: 420px;
-    padding: 35px 25px;
-    border-radius: 18px;
-    backdrop-filter: blur(14px);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
-    text-align: center;
+    overflow-x: hidden;
     color: #fff;
 }
 
-.title {
-    font-size: 26px;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
-}
-
-.amount {
-    font-size: 42px;
-    font-weight: bold;
-    background: linear-gradient(135deg, #00eaff, #00ff9d);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin: 10px 0;
-}
-
-.sub-text {
-    font-size: 14px;
-    color: #d8d8d8;
-    margin-bottom: 25px;
-}
-
-/* Payment buttons container */
-.gateway-container {
-    margin-top: 10px;
-}
-
-/* Animated payment buttons */
-.gateway-btn {
+.bg-gradient {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    padding: 14px 18px;
-    margin: 12px 0;
-    border: none;
-    border-radius: 14px;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    justify-content: center;
-    font-weight: 500;
-    transition: 0.25s ease-in-out;
-    position: relative;
+    height: 100%;
+    background: radial-gradient(circle at top, #5c4aff, #1a1f3d 70%);
+    z-index: -1;
 }
 
-/* Logos */
-.gateway-btn img {
-    width: 30px;
-    height: 30px;
+/* ---------------- CARD ---------------- */
+
+.payment-card {
+    margin-top: 60px;
+    width: 460px;
+    padding: 30px 28px;
+    border-radius: 22px;
+    backdrop-filter: blur(18px);
+    background: rgba(255,255,255,0.08);
+    box-shadow: 0px 22px 50px rgba(0,0,0,0.4);
+    text-align: left;
+    animation: fadeIn 1s ease forwards;
 }
 
-.razorpay {
-    background: linear-gradient(135deg, #0d61ff, #2fa6ff);
-    box-shadow: 0 0 15px rgba(0, 120, 255, 0.6);
+.header-title {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 20px;
 }
 
-.cashfree {
-    background: linear-gradient(135deg, #00d09c, #04ffa5);
-    box-shadow: 0 0 20px rgba(0, 255, 170, 0.6);
+/* ---------------- PRICE CARD ---------------- */
+
+.price-card {
+    padding: 18px;
+    margin-bottom: 25px;
+    border-radius: 16px;
+    text-align: center;
 }
 
-
-.paypal {
-    background: linear-gradient(135deg, #003087, #009cde);
-    box-shadow: 0 0 15px rgba(0, 170, 255, 0.6);
-}
-
-.gateway-btn:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
-}
-
-/* Secure text */
-.safe {
-    margin-top: 25px;
-    font-size: 13px;
+.price-title {
+    font-size: 14px;
     opacity: 0.7;
 }
 
+.price-value {
+    font-size: 40px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #00ffcc, #00b3ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
-.ripple {
-    position: absolute;
+/* ---------------- SECTIONS ---------------- */
+
+.section {
+    padding: 18px;
+    margin-bottom: 22px;
+    border-radius: 16px;
+}
+
+.section h3 {
+    margin-top: 0;
+    font-size: 18px;
+    margin-bottom: 14px;
+}
+
+/* Passenger List */
+.passenger-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.passenger-list li {
+    margin-bottom: 12px;
+}
+
+.passenger-list .bullet {
+    width: 8px;
+    height: 8px;
+    background: #00ffd5;
     border-radius: 50%;
-    transform: scale(0);
-    background: rgba(255, 255, 255, 0.6);
-    animation: ripple-effect 0.6s linear;
+    display: inline-block;
+    margin-right: 8px;
 }
 
-@keyframes ripple-effect {
-    to {
-        transform: scale(4);
-        opacity: 0;
-    }
+/* Fare rows */
+.row {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 0;
 }
 
+.total {
+    font-weight: bold;
+    font-size: 18px;
+}
 
+.divider {
+    height: 1px;
+    background: rgba(255,255,255,0.3);
+    margin: 12px 0;
+}
+
+/* ---------------- PAYMENT BUTTONS ---------------- */
+
+.gateways { margin-top: 10px; }
+
+.pay-btn {
+    width: 100%;
+    padding: 14px 18px;
+    border: none;
+    border-radius: 14px;
+    margin: 10px 0;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pay-btn img {
+    width: 32px;
+}
+
+.razor {
+    background: linear-gradient(135deg, #0d61ff, #2fa6ff);
+    box-shadow: 0 0 12px rgba(0,120,255,0.6);
+}
+
+.cashfree {
+    background: linear-gradient(135deg, #00d09c, #00ffa5);
+    box-shadow: 0 0 12px rgba(0,255,170,0.6);
+}
+
+.paypal {
+    background: linear-gradient(135deg, #003087, #009cde);
+    box-shadow: 0 0 12px rgba(0,170,255,0.6);
+}
+
+.pay-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 25px rgba(255,255,255,0.4);
+}
+
+.secure-tag {
+    text-align: center;
+    margin-top: 18px;
+    opacity: 0.8;
+    font-size: 14px;
+}
+
+/* ---------------- ANIMATIONS ---------------- */
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(25px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade { animation: fadeIn 0.8s ease forwards; }
+.animate-slide { animation: fadeIn 1s ease forwards; }
+
+.animate-fade-up {
+    opacity: 0;
+    animation: fadeUp 0.9s ease forwards;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+.delay-3 { animation-delay: 0.6s; }
+
+/* Glass Effect */
+.glass {
+    backdrop-filter: blur(14px);
+    background: rgba(255,255,255,0.10);
+}

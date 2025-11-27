@@ -20,7 +20,7 @@ document.querySelectorAll(".gateway-btn").forEach(btn => {
 });
 
 function payWithRazorpay(amount) {
-    window.location.href = "razorpay.jsp?amount=" + amount;
+    window.location.href = "RazorPayPayment?amount=" + amount;
 }
 
 function payWithCashfree(amount) {
