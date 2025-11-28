@@ -57,9 +57,9 @@ public class DataBaseConnector {
 		TRAIN_NAME = "train_name";
 		AVAILABLE_DAYS = "available_days";
 
-		try (InputStream is = getClass().getClassLoader().getResourceAsStream("mongodb.properties")) {
+		try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("mongodb.properties")) {
 
-			DB_PROPERTIES.load(is);
+			DB_PROPERTIES.load(inputStream);
 
 		} catch (FileNotFoundException e) {
 

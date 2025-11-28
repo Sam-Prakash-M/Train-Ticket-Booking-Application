@@ -80,47 +80,50 @@ document.addEventListener("DOMContentLoaded", () => {
       const trainId = btn.dataset.train;
       const selectedClass = btn.dataset.selectedClass;
       const totalFare = btn.dataset.totalFare;
+
+      const card = btn.closest(".train-card");
+      const trainName = card.dataset.trainName;
+
       const source = btn.dataset.source;
       const destination = btn.dataset.destination;
 
-      if (!selectedClass) {
-        alert("Please select a class before booking!");
-        return;
-      }
+      const routes = JSON.parse(card.dataset.routes);
 
-      showLoader(true);
+      const srcStop = routes.find(r => r.station === source);
+      const destStop = routes.find(r => r.station === destination);
 
-      setTimeout(() => {
-        showLoader(false);
+      const params = {
+        trainId,
+        trainName,
+        classType: selectedClass,
+        source,
+        destination,
+        fare: totalFare,
 
-        // ✅ Create a hidden form to send POST request
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = "BookingServlet";
+        // 👉 NEW:
+        sourceArrival: srcStop.arrival,
+        sourceDeparture: srcStop.departure,
+        destinationArrival: destStop.arrival,
+        destinationDeparture: destStop.departure
+      };
 
-        const params = {
-          trainId,
-          classType: selectedClass,
-          source,
-          destination,
-          fare: totalFare
-        };
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "BookingServlet";
 
-        // Dynamically append hidden input fields
-        for (const key in params) {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = params[key];
-          form.appendChild(input);
-        }
+      Object.entries(params).forEach(([k, v]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      });
 
-        document.body.appendChild(form);
-        form.submit(); // 🚀 Send via POST
-      }, 600);
+      document.body.appendChild(form);
+      form.submit();
     });
   });
-  
+
   const swapBtn = document.getElementById("swapBtn");
   const from = document.getElementById("searchFrom");
   const to = document.getElementById("searchTo");

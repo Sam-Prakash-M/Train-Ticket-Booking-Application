@@ -1,5 +1,6 @@
-<%@ page import="org.json.*,java.util.*"%>
+<%@ page import="org.json.*,java.util.*,jakarta.servlet.*"%>
 <%@ page contentType="text/html;charset=UTF-8"%>
+<%@ page session="false"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,10 +8,35 @@
 <title>Available Trains</title>
 <link rel="stylesheet"
 	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="booking.css?v=1">
-<script defer src="booking.js?v=1"></script>
+<link rel="stylesheet" href="booking.css?v=3">
+<script defer src="booking.js?v=3"></script>
 </head>
 <body>
+	<%
+	HttpSession currentSession = request.getSession(false); // Do NOT create session
+	System.out.println("Current Session " + currentSession);
+
+	if (currentSession == null) {
+		// User directly accessed the page (no session created)
+		request.setAttribute("message", "Please log in to continue.");
+		RequestDispatcher rd = request.getRequestDispatcher("login.jsp");
+		rd.forward(request, response);
+		return;
+	}
+
+	String userName = (String) currentSession.getAttribute("user_name");
+
+	System.out.println("Current UserName : " + userName);
+	if (userName == null) {
+		// Session existed earlier but expired
+		request.setAttribute("message", "Your session expired. Please log in again.");
+		RequestDispatcher rd = request.getRequestDispatcher("login.jsp");
+		rd.forward(request, response);
+		return;
+	}
+	%>
+
+
 	<%
 	JSONArray matchedTrains = (JSONArray) request.getAttribute("MatchedTrainList");
 	Map<String, String> trainData = (Map<String, String>) request.getAttribute("TrainData");
@@ -122,9 +148,10 @@
 			availableList.add(availableDays.getString(k));
 				}
 		%>
-
 		<section class="train-card fade-in" data-train-id="<%=trainId%>"
+			data-train-name="<%=trainName%>"
 			data-routes='<%=routes.toString().replace("'", "\\'")%>'>
+
 			<div class="train-header">
 				<div>
 					<h2><%=trainName%>
@@ -208,23 +235,22 @@
 	</div>
 
 	<script>
-	const seatAvailabilityData = JSON.parse(
-	        <%= JSONObject.quote(seatAvailability.toString()) %>
-	    );
-	   // ---- Safe fareMap ----
-    const fareMap = JSON.parse(
-        <%
-            JSONObject safeFare = new JSONObject();
-            if (matchedTrains != null) {
-                for (int i = 0; i < matchedTrains.length(); i++) {
-                    JSONObject train = matchedTrains.getJSONObject(i);
-                    safeFare.put(train.getString("train_id"), train.getJSONObject("fare_per_km"));
-                }
-            }
-            out.print(JSONObject.quote(safeFare.toString()));
-        %>
-    );
-		
+		const seatAvailabilityData = JSON
+				.parse(
+	<%=JSONObject.quote(seatAvailability.toString())%>
+		);
+		// ---- Safe fareMap ----
+		const fareMap = JSON
+				.parse(
+	<%JSONObject safeFare = new JSONObject();
+if (matchedTrains != null) {
+	for (int i = 0; i < matchedTrains.length(); i++) {
+		JSONObject train = matchedTrains.getJSONObject(i);
+		safeFare.put(train.getString("train_id"), train.getJSONObject("fare_per_km"));
+	}
+}
+out.print(JSONObject.quote(safeFare.toString()));%>
+		);
 	</script>
 </body>
 </html>

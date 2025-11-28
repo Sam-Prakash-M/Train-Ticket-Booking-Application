@@ -1,0 +1,196 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f5f7fb;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 980px;
+    margin: auto;
+}
+
+.section-title {
+    margin-top: 25px;
+    color: #004aad;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.train-summary-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.train-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.station {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.arrow {
+    font-size: 2rem;
+    color: #0078d7;
+}
+
+.quota {
+    margin-top: 10px;
+    font-weight: 600;
+    color: #333;
+}
+
+.passenger-row {
+    display: flex;
+    gap: 10px;
+    margin: 12px 0;
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.passenger-row input,
+.passenger-row select {
+    padding: 10px;
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.remove-btn {
+    background: red;
+    color: white;
+    border: none;
+    padding: 0 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.add-btn {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: #0078d7;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+/* CONTACT DETAILS */
+.contact-box {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    margin-top: 15px;
+     max-width: 100%;
+    box-sizing: border-box;
+}
+
+.contact-label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #004aad;
+    font-size: 0.95rem;
+}
+
+.contact-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.country-code {
+    width: 80px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #c6c6c6;
+    background: #f1f1f1;
+    font-weight: 600;
+}
+
+.contact-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #c6c6c6;
+}
+
+.email-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #c6c6c6;
+    border-radius: 8px;
+     max-width: 100%;
+    box-sizing: border-box;
+}
+
+
+.pref-box {
+    background: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.fare-summary {
+    margin-top: 20px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+}
+
+.action-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.back-btn {
+    background: #ccc;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+}
+
+.continue-btn {
+    background: #0078d7;
+    padding: 10px 16px;
+    border-radius: 8px;
+    color: #fff;
+    border: none;
+}
+.toast {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: #005eff;
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    z-index: 9999;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}

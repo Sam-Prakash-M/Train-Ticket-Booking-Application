@@ -25,6 +25,10 @@ public class RegisterServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request,HttpServletResponse response) {
 		
+		
+		
+		
+		
 		String fullName = request.getParameter("fullname");
 		String email = request.getParameter("email");
 		String userName = request.getParameter("username");

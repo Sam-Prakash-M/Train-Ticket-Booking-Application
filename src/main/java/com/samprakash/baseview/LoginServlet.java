@@ -10,6 +10,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/LoginServlet")
 public class LoginServlet extends HttpServlet {
@@ -24,6 +25,11 @@ public class LoginServlet extends HttpServlet {
 
 		String userName = request.getParameter("username");
 		String password = request.getParameter("password");
+		
+		
+		HttpSession httpSession = request.getSession(true);
+		httpSession.setAttribute("user_name", userName); 
+		httpSession.setMaxInactiveInterval(60);
 
 		try {
 
