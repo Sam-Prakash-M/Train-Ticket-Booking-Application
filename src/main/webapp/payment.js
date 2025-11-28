@@ -15,18 +15,34 @@ function addRippleEffect(event) {
     btn.appendChild(circle);
 }
 
+
+function postToServlet(url, amount) {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = url;
+
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "amount";
+    input.value = amount;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+
 document.querySelectorAll(".gateway-btn").forEach(btn => {
     btn.addEventListener("click", addRippleEffect);
 });
 
 function payWithRazorpay(amount) {
-    window.location.href = "RazorPayPayment?amount=" + amount;
+      postToServlet("RazorPayPayment", amount);
 }
 
 function payWithCashfree(amount) {
-    window.location.href = "cashfree.jsp?amount=" + amount;
+   postToServlet("CashfreePaymentServlet", amount);
 }
 
 function payWithPaypal(amount) {
-    window.location.href = "paypal.jsp?amount=" + amount;
+    postToServlet("PaypalServlet", amount);
 }

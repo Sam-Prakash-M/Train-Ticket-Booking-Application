@@ -12,6 +12,7 @@ import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,9 +42,9 @@ public class RazorPayClientView extends HttpServlet {
     }
 
     @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response) {
+    public void doPost(HttpServletRequest request, HttpServletResponse response) {
 
-        response.setContentType("application/json; charset=UTF-8");
+     
 
         try (PrintWriter out = response.getWriter()) {
 
@@ -79,9 +80,18 @@ public class RazorPayClientView extends HttpServlet {
 
             // Create order
             Order order = client.orders.create(orderRequest);
+            
+            request.setAttribute("order_id", order.get("id"));
+            request.setAttribute("amount", amountPaise);
+            request.setAttribute("key", key);
+            
+            // For Success success@razorpay
+            // For Failure failure@razorpay
 
-            // Return JSON
-            out.print(order.toString());
+            RequestDispatcher requestDispatcher = request.getRequestDispatcher("razorpayCheckout.jsp");
+            
+            requestDispatcher.forward(request, response);
+           
 
         } catch (IOException | RazorpayException e) {
 			

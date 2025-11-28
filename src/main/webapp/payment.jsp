@@ -1,7 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 
 <%
-    double fare = (Double) request.getAttribute("fare");
+    double totalFare = (Double) request.getAttribute("totalFare");
+     System.out.println("Total Fare : "+totalFare);
     double gst = (Double) request.getAttribute("gst");
     double serviceCharge = (Double) request.getAttribute("serviceCharge");
     double total = (Double) request.getAttribute("totalPayable");
@@ -53,7 +54,7 @@
 
             <div class="row">
                 <span>Base Fare</span>
-                <span>₹ <%= fare %></span>
+                <span>₹ <%= totalFare %></span>
             </div>
 
             <div class="row">
@@ -101,7 +102,7 @@
     </div>
 </div>
 
-<script src="payment.js?v=4"></script>
+<script src="payment.js?v=5"></script>
 
 </body>
 </html>

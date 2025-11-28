@@ -7,6 +7,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/PaymentServlet")
 public class PaymentServlet extends HttpServlet {
@@ -25,12 +26,17 @@ public class PaymentServlet extends HttpServlet {
         String mobile = request.getParameter("mobile");
         String email = request.getParameter("email");
 
-        double fare = Double.parseDouble(request.getParameter("fare"));
+        int numberOfPerson = names.length;
+        System.out.println("Passenger Count : "+numberOfPerson);
+        System.out.println("Currency : "+request.getParameter("fare"));
+        double totalFare = Double.parseDouble(request.getParameter("fare")) * numberOfPerson;
+        System.out.println("Servlet Total Fare : "+totalFare);
 
         // EXTRA CHARGES
-        double gst = fare * 0.05;      // 5% GST
+        double gst = totalFare * 0.05;      // 5% GST
         double serviceCharge = 20.0;   // fixed or dynamic
-        double totalPayable = fare + gst + serviceCharge;
+       
+        double totalPayable = totalFare + gst + serviceCharge;
 
         request.setAttribute("names", names);
         request.setAttribute("ages", ages);
@@ -41,10 +47,27 @@ public class PaymentServlet extends HttpServlet {
         request.setAttribute("mobile", mobile);
         request.setAttribute("email", email);
 
-        request.setAttribute("fare", fare);
+        request.setAttribute("totalFare", totalFare);
         request.setAttribute("gst", gst);
         request.setAttribute("serviceCharge", serviceCharge);
         request.setAttribute("totalPayable", totalPayable);
+        
+        HttpSession session = request.getSession();
+
+        session.setAttribute("names", names);
+        session.setAttribute("ages", ages);
+        session.setAttribute("genders", genders);
+        session.setAttribute("nationalities", nationalities);
+        session.setAttribute("berths", berths);
+
+        session.setAttribute("mobile", mobile);
+        session.setAttribute("email", email);
+
+        session.setAttribute("totalFare", totalFare);
+        session.setAttribute("gst", gst);
+        session.setAttribute("serviceCharge", serviceCharge);
+        session.setAttribute("total", totalPayable);
+
 
         try {
             request.getRequestDispatcher("payment.jsp").forward(request, response);
