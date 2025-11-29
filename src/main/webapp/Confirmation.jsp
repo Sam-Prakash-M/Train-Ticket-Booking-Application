@@ -150,6 +150,26 @@
 				<button type="submit" class="continue-btn">Continue</button>
 			</div>
 
+			<input type="hidden" name="trainName"
+				value="<%=request.getAttribute("trainName")%>"> <input
+				type="hidden" name="trainId"
+				value="<%=request.getAttribute("trainId")%>"> <input
+				type="hidden" name="source"
+				value="<%=request.getAttribute("source")%>"> <input
+				type="hidden" name="destination"
+				value="<%=request.getAttribute("destination")%>"> <input
+				type="hidden" name="sourceDeparture"
+				value="<%=request.getAttribute("sourceDeparture")%>"> <input
+				type="hidden" name="sourceArrival"
+				value="<%=request.getAttribute("sourceArrival")%>"> <input
+				type="hidden" name="destinationArrival"
+				value="<%=request.getAttribute("destinationArrival")%>"> <input
+				type="hidden" name="destinationDeparture"
+				value="<%=request.getAttribute("destinationDeparture")%>">
+			<input type="hidden" name="classType"
+				value="<%=request.getAttribute("classType")%>">
+
+
 		</form>
 
 	</div>

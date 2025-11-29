@@ -2,6 +2,7 @@ package com.samprakash.searchview;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.Map;
@@ -10,7 +11,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.samprakash.baseviewmodel.TrainDataFetcher;
-import com.samprakash.repository.DataBaseConnector;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -34,7 +34,12 @@ public class SearchServlet extends HttpServlet {
 
 		String toStation = request.getParameter("toStation");
 
-		LocalDate travelDate = LocalDate.parse(request.getParameter("travelDate"));
+		String travelDateAsString  = request.getParameter("travelDate");
+	
+		LocalDate travelDate = LocalDate.parse(travelDateAsString);
+		
+		String travelDateFormatted = travelDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		
 
 		String dayName = travelDate.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
 		
@@ -49,7 +54,7 @@ public class SearchServlet extends HttpServlet {
 		}
 
 		
-		JSONObject trainSeatAvailability = TrainDataFetcher.getSeatAvailabilityForTrain(matchedTrainList);
+		JSONObject trainSeatAvailability = TrainDataFetcher.getSeatAvailabilityForTrain(matchedTrainList,travelDateFormatted);
 
 		Map<String, String> trainData = TrainDataFetcher.getTrainNameByID(matchedTrainList);
 		
@@ -59,10 +64,12 @@ public class SearchServlet extends HttpServlet {
 		request.setAttribute("TrainData", trainData);
 		request.setAttribute("TrainSeatAvailability", trainSeatAvailability);
 
-		System.out.println("Train Seat Availability\n"+trainSeatAvailability.toString());
-		
-		System.out.println("Train Data ");
-		System.out.println(trainData);
+		/*
+		 * System.out.println("Train Seat Availability\n"+trainSeatAvailability.toString
+		 * ());
+		 * 
+		 * System.out.println("Train Data "); System.out.println(trainData);
+		 */
 
 		RequestDispatcher requestDispatcher = request.getRequestDispatcher("booking.jsp");
 

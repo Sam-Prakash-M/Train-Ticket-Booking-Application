@@ -22,6 +22,18 @@ public class PaymentServlet extends HttpServlet {
         String[] genders = request.getParameterValues("pgender[]");
         String[] nationalities = request.getParameterValues("pnationality[]");
         String[] berths = request.getParameterValues("berth[]");
+        
+        String trainName = request.getParameter("trainName");
+        String trainId = request.getParameter("trainId");
+        String source = request.getParameter("source");
+        String destination = request.getParameter("destination");
+        String sourceDeparture = request.getParameter("sourceDeparture");
+        String sourceArrival = request.getParameter("sourceArrival");
+        String destinationArrival = request.getParameter("destinationArrival");
+        String destinationDeparture = request.getParameter("destinationDeparture");
+        String classType = request.getParameter("classType");
+        boolean isPassengerGivenAutoUpgrade = request.getParameter("autoUpgrade") == null ? false : true ;
+
 
         String mobile = request.getParameter("mobile");
         String email = request.getParameter("email");
@@ -67,6 +79,17 @@ public class PaymentServlet extends HttpServlet {
         session.setAttribute("gst", gst);
         session.setAttribute("serviceCharge", serviceCharge);
         session.setAttribute("total", totalPayable);
+        session.setAttribute("trainName", trainName);
+        session.setAttribute("trainId", trainId);
+        session.setAttribute("source", source);
+        session.setAttribute("destination", destination);
+        session.setAttribute("sourceDeparture", sourceDeparture);
+        session.setAttribute("sourceArrival", sourceArrival);
+        session.setAttribute("destinationArrival", destinationArrival);
+        session.setAttribute("destinationDeparture", destinationDeparture);
+        session.setAttribute("classType", classType);
+        session.setAttribute("autoUpgrade", isPassengerGivenAutoUpgrade);
+
 
 
         try {

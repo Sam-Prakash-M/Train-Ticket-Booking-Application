@@ -3,17 +3,19 @@ package com.samprakash.repository;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.bson.Document;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -25,16 +27,14 @@ import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
 
-
-
 public class DataBaseConnector {
 
 	private static final DataBaseConnector DATA_BASE_CONNECTOR;
-	
+
 	private final Properties DB_PROPERTIES;
 
 	private final String MONGO_DB_CONNECTION_URL, TRAIN_BOOKING_DB_NAME;
-	private final String TRAIN_ID, DATE,TRAIN_NAME,AVAILABLE_DAYS;
+	private final String TRAIN_ID, DATE, TRAIN_NAME;
 
 	static {
 
@@ -55,7 +55,6 @@ public class DataBaseConnector {
 		TRAIN_ID = "train_id";
 		DATE = "date";
 		TRAIN_NAME = "train_name";
-		AVAILABLE_DAYS = "available_days";
 
 		try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("mongodb.properties")) {
 
@@ -169,10 +168,10 @@ public class DataBaseConnector {
 					.getCollection(TrainBookingDatabase.TRAIN_SCHEDULE.name());
 
 			Document query = new Document()
-				    .append("routes.station", new Document("$all", Arrays.asList(fromStation, toStation)))
-				    .append("available_days", travelDate);
-			
-			       FindIterable<Document> trainsOnDate = allTrainDocument.find(query);
+					.append("routes.station", new Document("$all", Arrays.asList(fromStation, toStation)))
+					.append("available_days", travelDate);
+
+			FindIterable<Document> trainsOnDate = allTrainDocument.find(query);
 
 			for (Document train : trainsOnDate) {
 				List<Document> routes = (List<Document>) train.get("routes");
@@ -201,100 +200,158 @@ public class DataBaseConnector {
 
 	}
 
-	public JSONObject getSeatAvailabilityForTrain(JSONArray matchedTrainList) {
+	public JSONObject getSeatAvailabilityForTrain(JSONArray matchedTrainList, String journeyDate) {
 
-	    JSONObject availabilityJson = new JSONObject();
+		JSONObject availabilityJson = new JSONObject();
 
-	    if (matchedTrainList == null) {
-	        System.out.println("Given JSON Array is null");
-	        return availabilityJson;
-	    }
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
 
-	    try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
 
-	        MongoDatabase trainBookingDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
-	        MongoCollection<Document> availabilityCollection = trainBookingDatabase
-	                .getCollection(TrainBookingDatabase.SEAT_AVAILABILITY.name());
+			MongoCollection<Document> seatLayoutCol = db.getCollection(TrainBookingDatabase.SEAT_LAYOUT.name());
+			MongoCollection<Document> seatAvailCol = db.getCollection(TrainBookingDatabase.SEAT_AVAILABILITY.name());
 
-	        for (int i = 0; i < matchedTrainList.length(); i++) {
-	            JSONObject trainObj = matchedTrainList.getJSONObject(i);
-	            String trainID = trainObj.optString(TRAIN_ID, "");
-	            
-	            JSONArray availableWeekDays = trainObj.optJSONArray(AVAILABLE_DAYS);
-	            
-	            AggregateIterable<Document> result = availabilityCollection.aggregate(Arrays.asList(
-	                    new Document("$match", new Document(TRAIN_ID, trainID)),
-	                    new Document("$unwind", "$coaches"),
-	                    new Document("$unwind", "$coaches.seats"),
-	                    new Document("$match", new Document("coaches.seats.status", "available")),
-	                    new Document("$group", new Document("_id", new Document("coach_no", "$coaches.coach_no")
-	                                                       .append("class", "$coaches.class"))
-	                                           .append("available_seats", new Document("$sum", 1)))
-	            ));
+			for (int i = 0; i < matchedTrainList.length(); i++) {
 
-	            JSONObject trainJson = new JSONObject();
-	          // trainJson.put(AVAILABLE_DAYS,availableWeekDays);
-	        
-	            for (Document doc : result) {
-	                Document idDoc = doc.get("_id", Document.class);
-	                String coachNo = idDoc.getString("coach_no");
-	                String coachClass = idDoc.getString("class");
-	                int availableSeats = doc.getInteger("available_seats", 0);
+				String trainID = matchedTrainList.getJSONObject(i).getString(TRAIN_ID);
 
-	                JSONObject coachJson = new JSONObject();
-	                coachJson.put("class", coachClass);	
-	                coachJson.put("available_seats", availableSeats);
+				Document layoutDoc = seatLayoutCol.find(Filters.eq(TRAIN_ID, trainID)).first();
+				if (layoutDoc == null)
+					continue;
+				Document classInfo = (Document) layoutDoc.get("class_info");
 
-	                trainJson.put(coachNo, coachJson);
-	            }
-	            System.out.println("Printed " +trainJson.toString());
-	            availabilityJson.put(trainID, trainJson);
-	       
-	        }
+				Document seatAvail = seatAvailCol
+						.find(Filters.and(Filters.eq(TRAIN_ID, trainID), Filters.eq(DATE, journeyDate))).first();
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+				Set<String> booked = new HashSet<>();
+				if (seatAvail != null && seatAvail.containsKey("booked")) {
+					booked.addAll(seatAvail.getList("booked", String.class));
+				}
 
-	    return availabilityJson;
+				JSONObject trainJson = new JSONObject();
+
+				// NEW: coaches is a document, not an array
+				Document coachesDoc = (Document) layoutDoc.get("coaches");
+
+				for (String coachClass : coachesDoc.keySet()) {
+
+					Document classLimits = (Document) classInfo.get(coachClass);
+					int racLimit = classLimits.getInteger("rac_limit");
+					int wlLimit = classLimits.getInteger("wl_limit");
+
+					// Read RAC and WL already booked (if exist)
+					List<String> bookedRAC = new ArrayList<>();
+					List<String> bookedWL = new ArrayList<>();
+					if (seatAvail != null) {
+						if (seatAvail.containsKey("rac")) {
+							bookedRAC = seatAvail.getList("rac", String.class);
+						}
+						if (seatAvail.containsKey("wl")) {
+							bookedWL = seatAvail.getList("wl", String.class);
+						}
+					}
+
+					int usedRAC = bookedRAC.size();
+					int usedWL = bookedWL.size();
+
+					int availableRAC = Math.max(0, racLimit - usedRAC);
+					int availableWL = Math.max(0, wlLimit - usedWL);
+
+					JSONArray coachArray = new JSONArray();
+					List<Document> coachList = (List<Document>) coachesDoc.get(coachClass);
+
+					for (Document coach : coachList) {
+
+						int available = 0;
+						String coachNo = coach.getString("coach_no");
+						List<Document> seats = coach.getList("seats", Document.class);
+
+						for (Document seat : seats) {
+							String seatID = coachNo + "-" + seat.getString("seat_no");
+
+							if (!booked.contains(seatID)) {
+								available++;
+							}
+						}
+
+						JSONObject coachJson = new JSONObject();
+
+						if (available > 0) {
+							coachJson.put("coach_no", coachNo);
+							coachJson.put("available_seats", available);
+							coachArray.put(coachJson);
+						} 
+		
+					}
+					
+					if(coachArray.isEmpty()) {
+						if (availableRAC > 0) { 
+							JSONObject racJsonObj = new JSONObject();
+							racJsonObj.put("status", "RAC");
+							racJsonObj.put("available_seats", availableRAC);
+							trainJson.put(coachClass, racJsonObj);
+						}
+						else if (availableWL > 0) { 
+							JSONObject wlJsonObj = new JSONObject();
+							wlJsonObj.put("status", "WL");
+							wlJsonObj.put("available_seats", availableWL);
+							trainJson.put(coachClass, wlJsonObj);
+						}
+						else {
+							JSONObject noTicketsJsonObj = new JSONObject();
+							noTicketsJsonObj.put("status", "NOT_AVAILABLE");
+							trainJson.put(coachClass, noTicketsJsonObj);
+						}
+					}
+					else {
+						trainJson.put(coachClass, coachArray);
+					}
+					
+				}
+
+				availabilityJson.put(trainID, trainJson);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return availabilityJson;
 	}
 
 	public Map<String, String> getTrainNameByID(JSONArray matchedTrainList) {
-		
-		Map<String,String> trainNameIDMap = new TreeMap<>();
-		
-		
-		if(matchedTrainList == null) {
-			
+
+		Map<String, String> trainNameIDMap = new TreeMap<>();
+
+		if (matchedTrainList == null) {
+
 			System.out.println("Provided matchedTrainList Json Array is Null");
 			return trainNameIDMap;
 		}
-		
-		
-		try(MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, DATE))) {
-			
-			MongoDatabase trainBookingDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME,""));
-			
-			MongoCollection<Document> trainCollection = trainBookingDatabase.getCollection(TrainBookingDatabase.TRAINS.name());
-			
-			
-				int size = matchedTrainList.length();
-				
-				
-				for(int i = 0 ; i < size ; i++) {
-					
-					String trainID = ((JSONObject)matchedTrainList.get(i)).getString(TRAIN_ID);
-					
-					Document trainDocument = trainCollection.find(Filters.eq(TRAIN_ID, trainID)).first();
-					
-					String trainName = trainDocument.getString(TRAIN_NAME);
-					
-					trainNameIDMap.put(trainID, trainName);
-				}
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, DATE))) {
+
+			MongoDatabase trainBookingDatabase = mongoClient
+					.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> trainCollection = trainBookingDatabase
+					.getCollection(TrainBookingDatabase.TRAINS.name());
+
+			int size = matchedTrainList.length();
+
+			for (int i = 0; i < size; i++) {
+
+				String trainID = ((JSONObject) matchedTrainList.get(i)).getString(TRAIN_ID);
+
+				Document trainDocument = trainCollection.find(Filters.eq(TRAIN_ID, trainID)).first();
+
+				String trainName = trainDocument.getString(TRAIN_NAME);
+
+				trainNameIDMap.put(trainID, trainName);
+			}
 		}
-		
+
 		return trainNameIDMap;
 	}
-
 
 }
