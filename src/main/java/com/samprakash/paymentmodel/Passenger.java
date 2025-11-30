@@ -1,5 +1,7 @@
 package com.samprakash.paymentmodel;
 
+import com.samprakash.ticketbookmodel.SeatMetaData;
+
 public class Passenger {
 
 	private String name;
@@ -7,8 +9,15 @@ public class Passenger {
 	private byte age; 
 	private char gender;
 	private String nationalities;
+	private SeatMetaData seatMetaData;
 	
 	
+	public SeatMetaData getSeatMetaData() {
+		return seatMetaData;
+	}
+	public void setSeatMetaData(SeatMetaData seatMetaData) {
+		this.seatMetaData = seatMetaData;
+	}
 	public Passenger(String name,String preference,byte age,char gender,String nationalities) {
 		
 		this.name = name;
