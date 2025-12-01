@@ -22,10 +22,16 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.Updates;
 import com.samprakash.basemodel.TrainBookingDatabase;
 import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
+import com.samprakash.paymentmodel.Passenger;
+import com.samprakash.ticketbookmodel.SeatMetaData;
+import com.samprakash.ticketbookmodel.Ticket;
 
 public class DataBaseConnector {
 
@@ -280,33 +286,30 @@ public class DataBaseConnector {
 							coachJson.put("coach_no", coachNo);
 							coachJson.put("available_seats", available);
 							coachArray.put(coachJson);
-						} 
-		
+						}
+
 					}
-					
-					if(coachArray.isEmpty()) {
-						if (availableRAC > 0) { 
+
+					if (coachArray.isEmpty()) {
+						if (availableRAC > 0) {
 							JSONObject racJsonObj = new JSONObject();
 							racJsonObj.put("status", "RAC");
 							racJsonObj.put("available_seats", availableRAC);
 							trainJson.put(coachClass, racJsonObj);
-						}
-						else if (availableWL > 0) { 
+						} else if (availableWL > 0) {
 							JSONObject wlJsonObj = new JSONObject();
 							wlJsonObj.put("status", "WL");
 							wlJsonObj.put("available_seats", availableWL);
 							trainJson.put(coachClass, wlJsonObj);
-						}
-						else {
+						} else {
 							JSONObject noTicketsJsonObj = new JSONObject();
 							noTicketsJsonObj.put("status", "NOT_AVAILABLE");
 							trainJson.put(coachClass, noTicketsJsonObj);
 						}
-					}
-					else {
+					} else {
 						trainJson.put(coachClass, coachArray);
 					}
-					
+
 				}
 
 				availabilityJson.put(trainID, trainJson);
@@ -352,6 +355,115 @@ public class DataBaseConnector {
 		}
 
 		return trainNameIDMap;
+	}
+
+	public Ticket getConfirmedTicektForAllPassenger(Set<Passenger> passengerDetails, String trainId, String trainName,
+			String source, String destination, String classType, String date) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> layoutCollection = db.getCollection(TrainBookingDatabase.SEAT_LAYOUT.name());
+			MongoCollection<Document> availabilityCollection = db.getCollection(TrainBookingDatabase.SEAT_AVAILABILITY.name());
+
+			// 1. Load layout
+			Document layout = layoutCollection.find(Filters.eq(TRAIN_ID, trainId)).first();
+			if (layout == null)
+				throw new RuntimeException("Layout Missing");
+
+			List<Document> coaches = (List<Document>) ((Document) layout.get("coaches")).get(classType);
+
+			// 2. Load availability
+			Document availability = availabilityCollection
+					.find(Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, date))).first();
+
+			if (availability == null) {
+				availability = new Document(TRAIN_ID, trainId).append(DATE, date).append("booked",
+						new ArrayList<>());
+				availabilityCollection.insertOne(availability);
+			}
+
+			List<String> bookedSeats = (List<String>) availability.get("booked");
+
+			// 3. Flatten seats
+			List<Document> allSeats = new ArrayList<>();
+			for (Document coach : coaches) {
+				String coachNo = coach.getString("coach_no");
+				List<Document> seats = (List<Document>) coach.get("seats");
+
+				for (Document seat : seats) {
+					seat.append("coach_no", coachNo);
+					allSeats.add(seat);
+				}
+			}
+
+			// **GROUP BOOKING OPTIMIZATION**
+			// Sort by coach → seat_no so grouped passengers get nearby seats
+			allSeats.sort((a, b) -> {
+				int cmp = a.getString("coach_no").compareTo(b.getString("coach_no"));
+				if (cmp != 0)
+					return cmp;
+				return Integer.compare(Integer.parseInt(a.getString("seat_no")),
+						Integer.parseInt(b.getString("seat_no")));
+			});
+
+			// 4. Allocate seat for each passenger
+			for (Passenger p : passengerDetails) {
+
+				String pref = p.getPreference(); // LB/UB/MB/SL/SU
+
+				// LIST 1 → Preferred seats
+				List<Document> preferredSeats = allSeats.stream()
+						.filter(s -> s.getString("berth").equalsIgnoreCase(pref)
+								&& !bookedSeats.contains(s.getString("coach_no") + "-" + s.getString("seat_no")))
+						.toList();
+
+				// LIST 2 → Fallback seats (everything else)
+				List<Document> fallbackSeats = allSeats.stream()
+						.filter(s -> !bookedSeats.contains(s.getString("coach_no") + "-" + s.getString("seat_no")))
+						.toList();
+
+				boolean allocated = tryAllocate(p, preferredSeats, bookedSeats, availabilityCollection, trainId, date);
+
+				if (!allocated) {
+					allocated = tryAllocate(p, fallbackSeats, bookedSeats, availabilityCollection, trainId, date);
+				}
+
+				if (!allocated)
+					throw new RuntimeException("No seats available for " + p.getName());
+			}
+
+			// 5. Create ticket
+			String pnr = "PNR" + System.currentTimeMillis();
+			return new Ticket(trainId, trainName, classType, source, destination, pnr, "TXN-" + System.nanoTime(),
+					passengerDetails);
+
+		}
+	}
+
+	private boolean tryAllocate(Passenger p, List<Document> seatList, List<String> bookedSeats,
+			MongoCollection<Document> availabilityCollection, String trainId, String date) {
+
+		for (Document seat : seatList) {
+
+			String coachNo = seat.getString("coach_no");
+			String seatNo = seat.getString("seat_no");
+			String seatCode = coachNo + "-" + seatNo;
+
+			Document updated = availabilityCollection.findOneAndUpdate(
+					Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, date),
+							Filters.not(Filters.in("booked", seatCode))),
+					Updates.push("booked", seatCode),
+					new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+
+			if (updated != null) {
+				p.setSeatMetaData(new SeatMetaData(coachNo, Byte.parseByte(seatNo)));
+				bookedSeats.add(seatCode);
+				return true;
+			}
+		}
+		return false;
 	}
 
 }
