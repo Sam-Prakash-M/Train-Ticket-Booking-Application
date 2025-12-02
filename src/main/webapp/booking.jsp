@@ -9,7 +9,7 @@
 <link rel="stylesheet"
 	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="booking.css?v=4">
-<script defer src="booking.js?v=5"></script>
+<script defer src="booking.js?v=6"></script>
 </head>
 <body>
 	<%

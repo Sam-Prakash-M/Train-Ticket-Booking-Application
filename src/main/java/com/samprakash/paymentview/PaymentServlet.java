@@ -23,6 +23,7 @@ public class PaymentServlet extends HttpServlet {
         String[] nationalities = request.getParameterValues("pnationality[]");
         String[] berths = request.getParameterValues("berth[]");
         
+        String travelDate = request.getParameter("travelDate");
         String trainName = request.getParameter("trainName");
         String trainId = request.getParameter("trainId");
         String source = request.getParameter("source");
@@ -63,9 +64,11 @@ public class PaymentServlet extends HttpServlet {
         request.setAttribute("gst", gst);
         request.setAttribute("serviceCharge", serviceCharge);
         request.setAttribute("totalPayable", totalPayable);
+        request.setAttribute("travelDate", travelDate);
         
         HttpSession session = request.getSession();
 
+        session.setAttribute("travelDate", travelDate);
         session.setAttribute("names", names);
         session.setAttribute("ages", ages);
         session.setAttribute("genders", genders);

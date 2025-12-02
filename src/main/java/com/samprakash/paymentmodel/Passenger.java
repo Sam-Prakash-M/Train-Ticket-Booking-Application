@@ -56,5 +56,10 @@ public class Passenger {
 	public void setNationalities(String nationalities) {
 		this.nationalities = nationalities;
 	}
+	@Override
+	public String toString() {
+		return "Passenger [name=" + name + ", preference=" + preference + ", age=" + age + ", gender=" + gender
+				+ ", nationalities=" + nationalities + ", seatMetaData=" + seatMetaData + "]";
+	}
 	
 }

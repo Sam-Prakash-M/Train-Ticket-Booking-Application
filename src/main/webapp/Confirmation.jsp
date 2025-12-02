@@ -26,12 +26,13 @@
 		<!-- Train Summary -->
 		<div class="train-summary-card">
 			<h2>
+			   <%=request.getAttribute("travelDate") %>
 				<%=request.getAttribute("trainName")%>
 				(<%=request.getAttribute("trainId")%>) - Class Type (
 				<%=request.getAttribute("classType")%>
 				)
 			</h2>
-
+			
 
 			<div class="train-row">
 				<div>
@@ -168,7 +169,8 @@
 				value="<%=request.getAttribute("destinationDeparture")%>">
 			<input type="hidden" name="classType"
 				value="<%=request.getAttribute("classType")%>">
-
+			<input type="hidden" name="travelDate"
+					value="<%=request.getAttribute("travelDate")%>">
 
 		</form>
 

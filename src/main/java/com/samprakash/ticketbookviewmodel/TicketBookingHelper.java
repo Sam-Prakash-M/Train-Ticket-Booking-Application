@@ -8,21 +8,21 @@ import com.samprakash.ticketbookmodel.Ticket;
 
 public class TicketBookingHelper {
 
-	public static void bookTicket(Set<Passenger> passengerDetails, String mobile, String email, String trainName,
+	public static Ticket bookTicket(String travelDate,Set<Passenger> passengerDetails, String mobile, String email, String trainName,
 			String trainId, Double totalAmount, String source, String destination, String classType,
 			boolean isAutoUpgrade) {
 		
 		
-		// Need to Get via Servlet
-		String travelDate = null;
+		
+	
 		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
 		
-		Ticket confirmedTicket = dataBaseConnector.getConfirmedTicektForAllPassenger(passengerDetails,trainId,trainName,
+		Ticket confirmedTicket = dataBaseConnector.getConfirmedTicketForAllPassenger(passengerDetails,trainId,trainName,
 				source,destination,classType,travelDate);
 		
+		System.out.println(confirmedTicket);
 		
-		
-		
+		return confirmedTicket;
 		
 		
 	}

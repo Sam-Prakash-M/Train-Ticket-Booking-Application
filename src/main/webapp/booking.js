@@ -163,6 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const destStop = routes.find(r =>
                 r.station.toLowerCase() === destination.toLowerCase()
             );
+			
+			const travelDate = document.getElementById("searchDate").value;
+
 
             const params = {
                 trainId,
@@ -171,6 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 source,
                 destination,
                 fare: totalFare,
+				travelDate,
                 sourceArrival: srcStop?.arrival || "-",
                 sourceDeparture: srcStop?.departure || "-",
                 destinationArrival: destStop?.arrival || "-",

@@ -33,6 +33,8 @@ String[] berths = (String[]) request.getAttribute("berths");
         <img src="train.png" class="train-logo">
         <div>
             <h3 class="train-title">
+                <%=session.getAttribute("travelDate") %>
+               
                 <%= session.getAttribute("trainName") %> 
                 (<%= session.getAttribute("trainId") %>)
             </h3>

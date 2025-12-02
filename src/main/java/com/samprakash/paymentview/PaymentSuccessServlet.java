@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.samprakash.paymentmodel.Passenger;
+import com.samprakash.ticketbookmodel.Ticket;
 import com.samprakash.ticketbookviewmodel.TicketBookingHelper;
 
 import jakarta.servlet.annotation.WebServlet;
@@ -30,6 +31,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 		String[] nationalities = (String[]) session.getAttribute("nationalities");
 		String[] berths = (String[]) session.getAttribute("berths");
 
+		String travelDate = (String) session.getAttribute("travelDate");
 		String trainName = (String) session.getAttribute("trainName");
 		String trainId = (String) session.getAttribute("trainId");
 		String source = (String) session.getAttribute("source");
@@ -50,13 +52,46 @@ public class PaymentSuccessServlet extends HttpServlet {
 
 		for (int i = 0; i < names.length; i++) {
 
-			Passenger newPassenger = new Passenger(names[i], berths[i], Byte.parseByte(ages[i]), genders[i].charAt(0),
-					nationalities[i]);
+			
+			Passenger newPassenger;
+			switch(berths[i]) {
+			
+			case "Lower" -> {
+				newPassenger = new Passenger(names[i], "LB", Byte.parseByte(ages[i]), genders[i].charAt(0),
+						nationalities[i]);
+			}
+			case "Middle" -> {
+				newPassenger = new Passenger(names[i], "MB", Byte.parseByte(ages[i]), genders[i].charAt(0),
+						nationalities[i]);
+			}
+			case "Upper" -> {
+				newPassenger = new Passenger(names[i], "UB", Byte.parseByte(ages[i]), genders[i].charAt(0),
+						nationalities[i]);
+			}
+			case "Side Lower" -> {
+				newPassenger = new Passenger(names[i], "SL", Byte.parseByte(ages[i]), genders[i].charAt(0),
+						nationalities[i]);
+			}
+			case "Side Upper" -> {
+				newPassenger = new Passenger(names[i], "SU", Byte.parseByte(ages[i]), genders[i].charAt(0),
+						nationalities[i]);
+			}
+			default -> {
+				 newPassenger = new Passenger(names[i], berths[i], Byte.parseByte(ages[i]), genders[i].charAt(0),
+							nationalities[i]);
+			}
+			}
+			 
 			passengerDetails.add(newPassenger);
 
 		}
+		System.out.println("Travel Date in SUccess : "+travelDate);
 		
-		TicketBookingHelper.bookTicket(passengerDetails,mobile,email,trainName,trainId,totalAmount,source,destination,classType,isAutoUpgrade);
+		Ticket UserTicket = TicketBookingHelper.bookTicket(travelDate,passengerDetails,mobile,email,trainName,trainId,totalAmount,source,destination,classType,isAutoUpgrade);
+		
+		
+		
+		
 
 	}
 

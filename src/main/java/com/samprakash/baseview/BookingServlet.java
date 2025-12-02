@@ -32,8 +32,11 @@ public class BookingServlet extends HttpServlet {
 	    String sourceDeparture = request.getParameter("sourceDeparture");
 	    String destinationArrival = request.getParameter("destinationArrival");
 	    String destinationDeparture = request.getParameter("destinationDeparture");
+	    String travelDate = request.getParameter("travelDate");
+
 
 	    System.out.println("Secure Booking:");
+	    System.out.println("Travel Date : "+travelDate);
 	    System.out.println(trainName + " ("+ trainId + ")");
 	    System.out.println("From: " + source + " ("+sourceDeparture+") ➜ "
 	                       + destination + " ("+destinationArrival+")");
@@ -52,6 +55,7 @@ public class BookingServlet extends HttpServlet {
 	    request.setAttribute("sourceDeparture", sourceDeparture);
 	    request.setAttribute("destinationArrival", destinationArrival);
 	    request.setAttribute("destinationDeparture", destinationDeparture);
+	    request.setAttribute("travelDate", travelDate);
 
 	    try {
 	        RequestDispatcher rd = request.getRequestDispatcher("Confirmation.jsp");
