@@ -463,7 +463,7 @@ public class DataBaseConnector {
 				String txnId = "TXN-" + System.nanoTime();
 
 				// Create Ticket (using your record)
-				return new Ticket(trainId, trainName, classType, source, destination, pnr, txnId,
+				return new Ticket(journeyDate,trainId, trainName, classType, source, destination, pnr, txnId,
 						new HashSet<>(passengerList));
 
 			} catch (Exception inner) {
@@ -684,6 +684,7 @@ public class DataBaseConnector {
 				// be replaced by another process
 				// Set passenger metadata to indicate RAC
 				p.setSeatMetaData(new SeatMetaData("RAC", (byte) idx));
+				p.setTicketStatus("RAC");
 				racAllocated.add(racCode);
 			} else {
 				// no RAC slot available
@@ -726,6 +727,7 @@ public class DataBaseConnector {
 								Updates.set("wl." + (idx - 1), wlCode), options);
 
 				p.setSeatMetaData(new SeatMetaData("WL", (byte) idx));
+				p.setTicketStatus("WL");
 				wlAllocated.add(wlCode);
 			} else {
 				stillUnallocated.add(p);

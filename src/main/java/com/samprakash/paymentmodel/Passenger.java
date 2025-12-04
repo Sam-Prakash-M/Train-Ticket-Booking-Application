@@ -10,8 +10,15 @@ public class Passenger {
 	private char gender;
 	private String nationalities;
 	private SeatMetaData seatMetaData;
+	private String ticketStatus = "CNF";
 	
 	
+	public String getTicketStatus() {
+		return ticketStatus;
+	}
+	public void setTicketStatus(String ticketStatus) {
+		this.ticketStatus = ticketStatus;
+	}
 	public SeatMetaData getSeatMetaData() {
 		return seatMetaData;
 	}
