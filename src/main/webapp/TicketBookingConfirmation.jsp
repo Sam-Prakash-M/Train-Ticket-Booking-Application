@@ -34,8 +34,10 @@
 						<p class="muted">Your ticket has been successfully booked.</p>
 					</div>
 					<div class="actions">
-						<button onclick="window.open('PrintTicket', '_blank')"
+						<button
+							onclick="window.open('PrintTicket?pnr=${ConfirmedTicket.pnrNumber}', '_blank')"
 							id="printBtn" class="btn">Print Ticket</button>
+
 						<button id="copyPnrBtn" class="btn btn-outline">Copy PNR</button>
 					</div>
 				</div>

@@ -31,8 +31,11 @@ import com.samprakash.basemodel.TrainBookingDatabase;
 import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
+import com.samprakash.exception.SeatNotAvailableException;
 import com.samprakash.paymentmodel.Passenger;
-import com.samprakash.ticketbookmodel.SeatCounts;
+import com.samprakash.ticketbookmodel.BookingData;
+import com.samprakash.ticketbookmodel.BookingState;
+import com.samprakash.ticketbookmodel.PassengerCollection;
 import com.samprakash.ticketbookmodel.SeatMetaData;
 import com.samprakash.ticketbookmodel.Ticket;
 
@@ -364,7 +367,8 @@ public class DataBaseConnector {
 	// Public booking method
 	// -----------------------
 	public Ticket getConfirmedTicketForAllPassenger(Set<Passenger> passengerDetails, String trainId, String trainName,
-			String source, String destination, String classType, String journeyDate) {
+			String source, String destination, String classType, String journeyDate, double totalAmount)
+			throws SeatNotAvailableException, Exception {
 
 		if (passengerDetails == null || passengerDetails.isEmpty()) {
 			throw new IllegalArgumentException("No passengers provided");
@@ -426,7 +430,8 @@ public class DataBaseConnector {
 
 			int required = passengerList.size();
 			if (freeConfirmed + freeRac + freeWl < required) {
-				throw new RuntimeException("Not enough seats (Confirmed + RAC + WL) for " + required + " passengers");
+				throw new SeatNotAvailableException(
+						"Not enough seats (Confirmed + RAC + WL) for " + required + " passengers");
 			}
 
 			// We'll track allocations to rollback if something fails
@@ -463,17 +468,17 @@ public class DataBaseConnector {
 				String txnId = "TXN-" + System.nanoTime();
 
 				// Create Ticket (using your record)
-				return new Ticket(journeyDate,trainId, trainName, classType, source, destination, pnr, txnId,
-						new HashSet<>(passengerList));
+				return new Ticket(journeyDate, trainId, trainName, classType, source, destination, pnr, txnId,
+						new HashSet<>(passengerList), totalAmount);
 
-			} catch (Exception inner) {
+			}
+
+			catch (Exception inner) {
 				// Rollback and propagate
 				rollback(availCol, availFilter, confirmedAllocated, racAllocated, wlAllocated);
 				throw inner;
 			}
 
-		} catch (Exception e) {
-			throw new RuntimeException("Booking failed: " + e.getMessage(), e);
 		}
 	}
 
@@ -565,7 +570,7 @@ public class DataBaseConnector {
 		Set<String> bookedSet = new HashSet<>(bookedList);
 		bookedSet.addAll(confirmedAllocated);
 
-		Document availFilter = new Document("train_id", trainId).append("date", journeyDate);
+		Document availFilter = new Document(TRAIN_ID, trainId).append(DATE, journeyDate);
 		FindOneAndUpdateOptions options = new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER);
 
 		List<Passenger> nextRound = new ArrayList<>();
@@ -617,8 +622,8 @@ public class DataBaseConnector {
 
 			// Atomic push only if seat not already present in booked array
 			Document updated = availCol.findOneAndUpdate(
-					Filters.and(Filters.eq("train_id", availFilter.getString("train_id")),
-							Filters.eq("date", availFilter.getString("date")), Filters.not(Filters.in("booked", code))),
+					Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
+							Filters.eq(DATE, availFilter.getString(DATE)), Filters.not(Filters.in("booked", code))),
 					Updates.push("booked", code), options);
 
 			if (updated != null) {
@@ -655,7 +660,7 @@ public class DataBaseConnector {
 			// and then read doc to compute index.
 			Document updated = availCol
 					.findOneAndUpdate(
-							Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", journeyDate),
+							Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
 									Filters.expr(new Document("$lt",
 											Arrays.asList(new Document("$size", "$rac"), racLimit)))),
 							Updates.push("rac", "RAC"), // push a placeholder; we'll determine its index by reading
@@ -676,7 +681,7 @@ public class DataBaseConnector {
 				// with index
 				// Build update: Updates.set("rac."+(idx-1), racCode);
 				Document confirm = availCol.findOneAndUpdate(
-						Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", journeyDate),
+						Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
 								Filters.eq("rac." + (idx - 1), "RAC")),
 						Updates.set("rac." + (idx - 1), racCode), options);
 
@@ -702,14 +707,14 @@ public class DataBaseConnector {
 
 		List<Passenger> stillUnallocated = new ArrayList<>();
 
-		Document availFilter = new Document("train_id", trainId).append("date", journeyDate);
+		Document availFilter = new Document(TRAIN_ID, trainId).append(DATE, journeyDate);
 		FindOneAndUpdateOptions options = new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER);
 
 		for (Passenger p : remaining) {
 
 			Document updated = availCol
 					.findOneAndUpdate(
-							Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", journeyDate),
+							Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
 									Filters.expr(
 											new Document("$lt", Arrays.asList(new Document("$size", "$wl"), wlLimit)))),
 							Updates.push("wl", "WL"), options);
@@ -722,7 +727,7 @@ public class DataBaseConnector {
 				// set actual code at the last position atomically (similar approach as RAC)
 				Document confirm = availCol
 						.findOneAndUpdate(
-								Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", journeyDate),
+								Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
 										Filters.eq("wl." + (idx - 1), "WL")),
 								Updates.set("wl." + (idx - 1), wlCode), options);
 
@@ -746,20 +751,138 @@ public class DataBaseConnector {
 
 		if ((confirmedAllocated != null && !confirmedAllocated.isEmpty())) {
 			availCol.updateOne(
-					Filters.and(Filters.eq("train_id", availFilter.getString("train_id")),
-							Filters.eq("date", availFilter.getString("date"))),
+					Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
+							Filters.eq(DATE, availFilter.getString(DATE))),
 					Updates.pullAll("booked", confirmedAllocated));
 		}
 
 		if ((racAllocated != null && !racAllocated.isEmpty())) {
-			availCol.updateOne(Filters.and(Filters.eq("train_id", availFilter.getString("train_id")),
-					Filters.eq("date", availFilter.getString("date"))), Updates.pullAll("rac", racAllocated));
+			availCol.updateOne(Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
+					Filters.eq(DATE, availFilter.getString(DATE))), Updates.pullAll("rac", racAllocated));
 		}
 
 		if ((wlAllocated != null && !wlAllocated.isEmpty())) {
-			availCol.updateOne(Filters.and(Filters.eq("train_id", availFilter.getString("train_id")),
-					Filters.eq("date", availFilter.getString("date"))), Updates.pullAll("wl", wlAllocated));
+			availCol.updateOne(Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
+					Filters.eq(DATE, availFilter.getString(DATE))), Updates.pullAll("wl", wlAllocated));
 		}
 	}
+
+	public void storeBookingStateInDB(BookingData bookingData, Set<Passenger> associatedPassengers, String mobile,
+			String email) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase mongoDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> bookingStateCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
+
+			List<Document> passengerList = new ArrayList<>();
+			if (associatedPassengers != null) {
+
+				for (Passenger passenger : associatedPassengers) {
+
+					StringBuilder ticketBookingStatus = new StringBuilder();
+
+					ticketBookingStatus
+							.append(passenger.getTicketStatus() + "/" + passenger.getSeatMetaData().getSeatNumber());
+
+					Document passengerDocument = new Document(PassengerCollection.NAME.name(), passenger.getName())
+							.append(PassengerCollection.AGE.name(), passenger.getAge())
+							.append(PassengerCollection.GENDER.name(), passenger.getGender())
+							.append(PassengerCollection.CLASS_TYPE.name(), bookingData.classType())
+							.append(PassengerCollection.COACH_NO.name(), passenger.getSeatMetaData().getCoachNo())
+							.append(PassengerCollection.CURRENT_STATUS.name(), ticketBookingStatus.toString())
+							.append(PassengerCollection.OPTED_AUTO_UPGRADE.name(), passenger.isAutoUpgrade());
+
+					passengerList.add(passengerDocument);
+				}
+
+			}
+
+			bookingStateCollection.insertOne(new Document(BookingState.USER_NAME.name(), bookingData.userName())
+					.append(BookingState.BOOKING_MOBILE_NO.name(), mobile)
+					.append(BookingState.BOOKING_EMAIL_ID.name(), email)
+					.append(BookingState.TRAVEL_DATE.name(), bookingData.travelDate())
+					.append(BookingState.TRAIN_ID.name(), bookingData.trainId())
+					.append(BookingState.TRAIN_NAME.name(), bookingData.traiName())
+					.append(BookingState.SOURCE.name(), bookingData.source())
+					.append(BookingState.DESTINATION.name(), bookingData.destination())
+					.append(BookingState.CLASS_TYPE.name(), bookingData.classType())
+					.append(BookingState.TOTAL_TICKET_FARE.name(), bookingData.totalFare())
+					.append(BookingState.PNR_NUMBER.name(), bookingData.pnrNo())
+					.append(BookingState.TRANSACTION_ID.name(), bookingData.transactionId())
+					.append(BookingState.BOOKING_STATUS.name(), bookingData.bookingStatus())
+					.append(BookingState.TRANSACTION_STATUS.name(), bookingData.transactionStatus())
+					.append(BookingState.ASSOCIATED_PASSENGER.name(), passengerList));
+
+		}
+
+	}
+
+	public Ticket getTicketByPNR(String pnrNumber) {
+
+		Ticket matchedTicket = null;
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase mongoDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> bookingStateCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
+
+			Document matchedTicketDocument = bookingStateCollection
+					.find(Filters.eq(BookingState.PNR_NUMBER.name(), pnrNumber)).first();
+
+			if (matchedTicketDocument != null) {
+
+				// ✅ 1. Read Passenger Array
+				Set<Passenger> associatedPassenger = new HashSet<>();
+
+				List<Document> passengerDocs = (List<Document>) matchedTicketDocument.get(BookingState.ASSOCIATED_PASSENGER.name());
+
+				if (passengerDocs != null) {
+					for (Document pDoc : passengerDocs) {
+
+						String name = pDoc.getString(PassengerCollection.NAME.name());
+						byte age = ((Number) pDoc.get(PassengerCollection.AGE.name())).byteValue();
+						char gender = pDoc.getString(PassengerCollection.GENDER.name()).charAt(0);
+						String classType = pDoc.getString(PassengerCollection.CLASS_TYPE.name());
+						String coachNo = pDoc.getString(PassengerCollection.COACH_NO.name());
+						String currentStatus = pDoc.getString(PassengerCollection.CURRENT_STATUS.name());
+						boolean autoUpgrade = pDoc.getBoolean(PassengerCollection.OPTED_AUTO_UPGRADE.name(), false);
+
+						// ✅ Create Passenger
+						Passenger passenger = new Passenger(name, classType, age, gender, "", // nationality not stored
+																								// in DB
+								autoUpgrade);
+
+						passenger.setTicketStatus(currentStatus);
+
+						SeatMetaData seat = new SeatMetaData(coachNo,Byte.parseByte(currentStatus.split("/")[1]));
+						passenger.setSeatMetaData(seat);
+
+						associatedPassenger.add(passenger);
+					}
+				}
+
+				// ✅ 2. Create Ticket Object
+				matchedTicket = new Ticket(matchedTicketDocument.getString(BookingState.TRAVEL_DATE.name()), // bookingDate
+						matchedTicketDocument.getString(BookingState.TRAIN_ID.name()), matchedTicketDocument.getString(BookingState.TRAIN_NAME.name()),
+						matchedTicketDocument.getString(BookingState.CLASS_TYPE.name()), matchedTicketDocument.getString(BookingState.SOURCE.name()),
+						matchedTicketDocument.getString(BookingState.DESTINATION.name()), matchedTicketDocument.getString(BookingState.PNR_NUMBER.name()),
+						matchedTicketDocument.getString(BookingState.TRANSACTION_ID), associatedPassenger,
+						matchedTicketDocument.getDouble(BookingState.TOTAL_TICKET_FARE.name()));
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return matchedTicket;
+	}
+
+	
+
 
 }

@@ -5,7 +5,7 @@ import java.util.Set;
 import com.samprakash.paymentmodel.Passenger;
 
 public record Ticket(String bookingDate,String trainId, String trainName, String className, String sourceArr, String destinationArr,
-		String pnrNumber, String transactionId, Set<Passenger> associatedPassenger) {
+		String pnrNumber, String transactionId, Set<Passenger> associatedPassenger,double totalFare) {
 	// JavaBean-style getters for JSP EL compatibility
 	public String getTrainId() {
 		return trainId;

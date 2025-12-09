@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.samprakash.basemodel.Status;
+import com.samprakash.exception.SeatNotAvailableException;
 import com.samprakash.paymentmodel.Passenger;
 import com.samprakash.ticketbookmodel.Ticket;
 import com.samprakash.ticketbookviewmodel.TicketBookingHelper;
@@ -27,6 +29,8 @@ public class PaymentSuccessServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 		HttpSession session = request.getSession();
+
+		String userID = (String) session.getAttribute("user_name");
 
 		String[] names = (String[]) session.getAttribute("names");
 		String[] ages = (String[]) session.getAttribute("ages");
@@ -60,49 +64,49 @@ public class PaymentSuccessServlet extends HttpServlet {
 
 			case "Lower" -> {
 				newPassenger = new Passenger(names[i], "LB", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i]);
+						nationalities[i],isAutoUpgrade);
 			}
 			case "Middle" -> {
 				newPassenger = new Passenger(names[i], "MB", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i]);
+						nationalities[i],isAutoUpgrade);
 			}
 			case "Upper" -> {
 				newPassenger = new Passenger(names[i], "UB", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i]);
+						nationalities[i],isAutoUpgrade);
 			}
 			case "Side Lower" -> {
 				newPassenger = new Passenger(names[i], "SL", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i]);
+						nationalities[i],isAutoUpgrade);
 			}
 			case "Side Upper" -> {
 				newPassenger = new Passenger(names[i], "SU", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i]);
+						nationalities[i],isAutoUpgrade);
 			}
 			default -> {
 				newPassenger = new Passenger(names[i], berths[i], Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i]);
+						nationalities[i],isAutoUpgrade);
 			}
 			}
 
 			passengerDetails.add(newPassenger);
 
 		}
-		System.out.println("Travel Date in SUccess : " + travelDate);
-
-		Ticket userTicket = TicketBookingHelper.bookTicket(travelDate, passengerDetails, mobile, email, trainName,
-				trainId, totalAmount, source, destination, classType, isAutoUpgrade);
-
-		RequestDispatcher requestDispatcher = request.getRequestDispatcher("TicketBookingConfirmation.jsp");
-
+	
 		try {
+			Ticket userTicket = TicketBookingHelper.bookTicket(travelDate, passengerDetails, mobile, email, trainName,
+					trainId, totalAmount, source, destination, classType, isAutoUpgrade);
 
+			RequestDispatcher requestDispatcher = request.getRequestDispatcher("TicketBookingConfirmation.jsp");
 			if (userTicket == null) {
 				request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
+				userTicket = new Ticket(travelDate,trainId,trainName,classType,source,destination,Status.NOT_APPLICAPLE.name(),null,null,totalAmount);
+				TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID,mobile,email);
 				requestDispatcher.forward(request, response);
 			} else {
-				session.setAttribute("ConfirmedTicket", userTicket);
 				request.setAttribute("ConfirmedTicket", userTicket);
+				TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID,mobile,email);
 				requestDispatcher.forward(request, response);
+			
 			}
 
 		} catch (ServletException e) {
@@ -112,6 +116,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 
 			e.printStackTrace();
 		}
+		
 
 	}
 
