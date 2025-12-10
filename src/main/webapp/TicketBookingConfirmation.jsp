@@ -142,7 +142,7 @@
 					</section>
 
 					<div class="cta-row">
-						<a href="MyBookings.jsp" class="btn btn-primary">View My
+						<a href="MyBookings" class="btn btn-primary">View My
 							Bookings</a> <a href="index.jsp" class="btn btn-ghost">Back to
 							Home</a>
 					</div>

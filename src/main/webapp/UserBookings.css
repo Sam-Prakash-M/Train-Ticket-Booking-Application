@@ -1,0 +1,183 @@
+body {
+    margin: 0;
+    background: radial-gradient(circle at top, #0f3d4c, #021014);
+    font-family: "Inter", "Segoe UI", sans-serif;
+    color: #fff;
+}
+
+.app-container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 30px 20px;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 36px;
+}
+
+/* ================= TABS ================= */
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.tab {
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.tab.active {
+    background: #00eaff;
+    color: #001018;
+    font-weight: 600;
+}
+
+/* ================= TAB VISIBILITY ================= */
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ================= BOOKING CARD ================= */
+
+.booking-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+    border-radius: 20px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.55);
+    backdrop-filter: blur(14px);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.booking-card:hover {
+    transform: translateY(-4px);
+}
+
+.booking-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.booking-summary h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.booking-summary p {
+    opacity: 0.8;
+    margin: 4px 0;
+}
+
+.right {
+    text-align: right;
+}
+
+.pnr {
+    display: block;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.price {
+    font-size: 18px;
+    color: #00eaff;
+    font-weight: bold;
+}
+
+/* ================= EXPANDABLE DETAILS ================= */
+
+.booking-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.booking-card.open .booking-details {
+    max-height: 600px;
+    margin-top: 20px;
+}
+
+/* ================= PASSENGERS ================= */
+
+.passenger-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.passenger-row:last-child {
+    border-bottom: none;
+}
+
+.status {
+    color: #00ff9c;
+    font-weight: 600;
+}
+.passenger-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.passenger-table th {
+    background: rgba(255,255,255,0.15);
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+.passenger-table td {
+    padding: 10px;
+    font-size: 14px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.passenger-table tr:hover {
+    background: rgba(255,255,255,0.12);
+}
+
+/* STATUS TAGS */
+.tag {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tag-cnf {
+    background: #00e676;
+    color: black;
+}
+
+.tag-rac {
+    background: #ffea00;
+    color: black;
+}
+
+.tag-wl {
+    background: #ff5252;
+    color: white;
+}
+

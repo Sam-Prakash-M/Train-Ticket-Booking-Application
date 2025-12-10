@@ -1,5 +1,6 @@
 package com.samprakash.ticketbookviewmodel;
 
+import java.util.List;
 import java.util.Set;
 
 import com.samprakash.basemodel.Status;
@@ -59,6 +60,13 @@ public class TicketBookingHelper {
 		
 		
 		return DATA_BASE_CONNECTOR.getTicketByPNR(pnrNumber);
+	}
+
+	public static List<BookingData>  getCurrentUserBooking(String userName) {
+		
+		
+		return DATA_BASE_CONNECTOR.getCurrentUserBooking(userName);
+		
 	}
 
 }

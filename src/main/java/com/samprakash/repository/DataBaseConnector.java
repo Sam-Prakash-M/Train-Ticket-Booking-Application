@@ -790,7 +790,7 @@ public class DataBaseConnector {
 					Document passengerDocument = new Document(PassengerCollection.NAME.name(), passenger.getName())
 							.append(PassengerCollection.AGE.name(), passenger.getAge())
 							.append(PassengerCollection.GENDER.name(), passenger.getGender())
-							.append(PassengerCollection.CLASS_TYPE.name(), bookingData.classType())
+							.append(PassengerCollection.CLASS_TYPE.name(), bookingData.getClassType())
 							.append(PassengerCollection.COACH_NO.name(), passenger.getSeatMetaData().getCoachNo())
 							.append(PassengerCollection.CURRENT_STATUS.name(), ticketBookingStatus.toString())
 							.append(PassengerCollection.OPTED_AUTO_UPGRADE.name(), passenger.isAutoUpgrade());
@@ -800,20 +800,20 @@ public class DataBaseConnector {
 
 			}
 
-			bookingStateCollection.insertOne(new Document(BookingState.USER_NAME.name(), bookingData.userName())
+			bookingStateCollection.insertOne(new Document(BookingState.USER_NAME.name(), bookingData.getUserName())
 					.append(BookingState.BOOKING_MOBILE_NO.name(), mobile)
 					.append(BookingState.BOOKING_EMAIL_ID.name(), email)
-					.append(BookingState.TRAVEL_DATE.name(), bookingData.travelDate())
-					.append(BookingState.TRAIN_ID.name(), bookingData.trainId())
-					.append(BookingState.TRAIN_NAME.name(), bookingData.traiName())
-					.append(BookingState.SOURCE.name(), bookingData.source())
-					.append(BookingState.DESTINATION.name(), bookingData.destination())
-					.append(BookingState.CLASS_TYPE.name(), bookingData.classType())
-					.append(BookingState.TOTAL_TICKET_FARE.name(), bookingData.totalFare())
-					.append(BookingState.PNR_NUMBER.name(), bookingData.pnrNo())
-					.append(BookingState.TRANSACTION_ID.name(), bookingData.transactionId())
-					.append(BookingState.BOOKING_STATUS.name(), bookingData.bookingStatus())
-					.append(BookingState.TRANSACTION_STATUS.name(), bookingData.transactionStatus())
+					.append(BookingState.TRAVEL_DATE.name(), bookingData.getTravelDate())
+					.append(BookingState.TRAIN_ID.name(), bookingData.getTrainId())
+					.append(BookingState.TRAIN_NAME.name(), bookingData.getTraiName())
+					.append(BookingState.SOURCE.name(), bookingData.getSource())
+					.append(BookingState.DESTINATION.name(), bookingData.getDestination())
+					.append(BookingState.CLASS_TYPE.name(), bookingData.getClassType())
+					.append(BookingState.TOTAL_TICKET_FARE.name(), bookingData.getTotalFare())
+					.append(BookingState.PNR_NUMBER.name(), bookingData.getPnrNo())
+					.append(BookingState.TRANSACTION_ID.name(), bookingData.getTransactionId())
+					.append(BookingState.BOOKING_STATUS.name(), bookingData.getBookingStatus())
+					.append(BookingState.TRANSACTION_STATUS.name(), bookingData.getTransactionStatus())
 					.append(BookingState.ASSOCIATED_PASSENGER.name(), passengerList));
 
 		}
@@ -839,7 +839,8 @@ public class DataBaseConnector {
 				// ✅ 1. Read Passenger Array
 				Set<Passenger> associatedPassenger = new HashSet<>();
 
-				List<Document> passengerDocs = (List<Document>) matchedTicketDocument.get(BookingState.ASSOCIATED_PASSENGER.name());
+				List<Document> passengerDocs = (List<Document>) matchedTicketDocument
+						.get(BookingState.ASSOCIATED_PASSENGER.name());
 
 				if (passengerDocs != null) {
 					for (Document pDoc : passengerDocs) {
@@ -859,7 +860,7 @@ public class DataBaseConnector {
 
 						passenger.setTicketStatus(currentStatus);
 
-						SeatMetaData seat = new SeatMetaData(coachNo,Byte.parseByte(currentStatus.split("/")[1]));
+						SeatMetaData seat = new SeatMetaData(coachNo, Byte.parseByte(currentStatus.split("/")[1]));
 						passenger.setSeatMetaData(seat);
 
 						associatedPassenger.add(passenger);
@@ -868,9 +869,12 @@ public class DataBaseConnector {
 
 				// ✅ 2. Create Ticket Object
 				matchedTicket = new Ticket(matchedTicketDocument.getString(BookingState.TRAVEL_DATE.name()), // bookingDate
-						matchedTicketDocument.getString(BookingState.TRAIN_ID.name()), matchedTicketDocument.getString(BookingState.TRAIN_NAME.name()),
-						matchedTicketDocument.getString(BookingState.CLASS_TYPE.name()), matchedTicketDocument.getString(BookingState.SOURCE.name()),
-						matchedTicketDocument.getString(BookingState.DESTINATION.name()), matchedTicketDocument.getString(BookingState.PNR_NUMBER.name()),
+						matchedTicketDocument.getString(BookingState.TRAIN_ID.name()),
+						matchedTicketDocument.getString(BookingState.TRAIN_NAME.name()),
+						matchedTicketDocument.getString(BookingState.CLASS_TYPE.name()),
+						matchedTicketDocument.getString(BookingState.SOURCE.name()),
+						matchedTicketDocument.getString(BookingState.DESTINATION.name()),
+						matchedTicketDocument.getString(BookingState.PNR_NUMBER.name()),
 						matchedTicketDocument.getString(BookingState.TRANSACTION_ID), associatedPassenger,
 						matchedTicketDocument.getDouble(BookingState.TOTAL_TICKET_FARE.name()));
 			}
@@ -882,7 +886,68 @@ public class DataBaseConnector {
 		return matchedTicket;
 	}
 
-	
+	public List<BookingData> getCurrentUserBooking(String userName) {
 
+		List<BookingData> allBooking = new ArrayList<>();
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase mongoDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> bookingStateCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
+
+			FindIterable<Document> allBookingDocument = bookingStateCollection
+					.find(Filters.eq(BookingState.USER_NAME.name(), userName));
+
+			for (Document eachBooking : allBookingDocument) {
+
+				BookingData bookingData = new BookingData();
+				bookingData.setUserName(userName);
+				bookingData.setTrainId(eachBooking.getString(BookingState.TRAIN_ID.name()));
+				bookingData.setTraiName(eachBooking.getString(BookingState.TRAIN_NAME.name()));
+				bookingData.setClassType(eachBooking.getString(BookingState.CLASS_TYPE.name()));
+				bookingData.setBookingStatus(eachBooking.getString(BookingState.BOOKING_STATUS.name()));
+				bookingData.setSource(eachBooking.getString(BookingState.SOURCE.name()));
+				bookingData.setDestination(eachBooking.getString(BookingState.DESTINATION.name()));
+				bookingData.setPnrNo(eachBooking.getString(BookingState.PNR_NUMBER.name()));
+				bookingData.setTotalFare(eachBooking.getDouble(BookingState.TOTAL_TICKET_FARE.name()));
+				bookingData.setTransactionId(eachBooking.getString(BookingState.TRANSACTION_ID.name()));
+				bookingData.setTransactionStatus(eachBooking.getString(BookingState.TRANSACTION_STATUS.name()));
+				bookingData.setTravelDate(eachBooking.getString(BookingState.TRAVEL_DATE.name()));
+
+				List<Passenger> associatedPassenger = new ArrayList<>();
+				List<Document> passengerDocs = (List<Document>) eachBooking
+						.get(BookingState.ASSOCIATED_PASSENGER.name());
+
+				for (Document pDoc : passengerDocs) {
+					String name = pDoc.getString(PassengerCollection.NAME.name());
+					byte age = ((Number) pDoc.get(PassengerCollection.AGE.name())).byteValue();
+					char gender = pDoc.getString(PassengerCollection.GENDER.name()).charAt(0);
+					String classType = pDoc.getString(PassengerCollection.CLASS_TYPE.name());
+					String coachNo = pDoc.getString(PassengerCollection.COACH_NO.name());
+					String currentStatus = pDoc.getString(PassengerCollection.CURRENT_STATUS.name());
+					boolean autoUpgrade = pDoc.getBoolean(PassengerCollection.OPTED_AUTO_UPGRADE.name(), false);
+
+					// ✅ Create Passenger
+					Passenger passenger = new Passenger(name, classType, age, gender, "", // nationality not stored
+																							// in DB
+							autoUpgrade);
+
+					passenger.setTicketStatus(currentStatus);
+
+					SeatMetaData seat = new SeatMetaData(coachNo, Byte.parseByte(currentStatus.split("/")[1]));
+					passenger.setSeatMetaData(seat);
+
+					associatedPassenger.add(passenger);
+
+				}
+				bookingData.setAssociatedPassenger(associatedPassenger);
+				allBooking.add(bookingData);
+
+			}
+
+		}
+		return allBooking;
+	}
 
 }
