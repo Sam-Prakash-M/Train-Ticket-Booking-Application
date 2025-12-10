@@ -29,7 +29,7 @@ public class SearchRestApi {
 		JSONArray matchedTrainList = new JSONArray(
 				this.getMatchedTrainList(sourceStation, destinationStation, travelDate));
 
-		return TrainDataFetcher.getSeatAvailabilityForTrain(matchedTrainList).toString();
+		return TrainDataFetcher.getSeatAvailabilityForTrain(matchedTrainList,travelDate).toString();
 	}
 
 	@GET

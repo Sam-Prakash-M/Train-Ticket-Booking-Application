@@ -1,183 +1,263 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const loader = document.getElementById("pageLoader");
-  const modal = document.getElementById("scheduleModal");
-  const closeBtn = modal.querySelector(".close-btn");
-  const scheduleTableBody = modal.querySelector("tbody");
-  const scheduleTrainName = document.getElementById("scheduleTrainName");
 
-  const showLoader = (show) => loader.classList.toggle("hidden", !show);
-  const showModal = (show) => modal.classList.toggle("hidden", !show);
+    /* ---------------------------------------------
+       BASIC SETUP
+    --------------------------------------------- */
+    const loader = document.getElementById("pageLoader");
+    const modal = document.getElementById("scheduleModal");
+    const closeBtn = modal.querySelector(".close-btn");
+    const scheduleTableBody = modal.querySelector("tbody");
+    const scheduleTrainName = document.getElementById("scheduleTrainName");
 
-  // ✅ Initial loading animation
-  showLoader(true);
-  setTimeout(() => showLoader(false), 400);
+    const showLoader = s => loader.classList.toggle("hidden", !s);
+    const showModal = s => modal.classList.toggle("hidden", !s);
 
-  // ✅ Train Schedule Modal
-  document.querySelectorAll(".schedule-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const card = btn.closest(".train-card");
-      const routes = JSON.parse(card.dataset.routes);
-      const title = card.querySelector("h2").textContent;
-      scheduleTrainName.textContent = title;
+    showLoader(true);
+    setTimeout(() => showLoader(false), 400);
 
-      scheduleTableBody.innerHTML = routes.map(r =>
-        `<tr>
-          <td>${r.station}</td>
-          <td>${r.arrival}</td>
-          <td>${r.departure}</td>
-          <td>${r.distance_from_start}</td>
-        </tr>`
-      ).join("");
-      showModal(true);
+
+    /* ---------------------------------------------
+       TRAIN SCHEDULE POPUP
+    --------------------------------------------- */
+    document.querySelectorAll(".schedule-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+
+            const card = btn.closest(".train-card");
+            const routes = JSON.parse(card.dataset.routes);
+            const title = card.querySelector("h2").textContent;
+
+            scheduleTrainName.textContent = title;
+
+            scheduleTableBody.innerHTML = routes.map(r => `
+                <tr>
+                    <td>${r.station}</td>
+                    <td>${r.arrival}</td>
+                    <td>${r.departure}</td>
+                    <td>${r.distance_from_start}</td>
+                </tr>
+            `).join("");
+
+            showModal(true);
+        });
     });
-  });
 
-  closeBtn.addEventListener("click", () => showModal(false));
-  modal.addEventListener("click", e => { if (e.target === modal) showModal(false); });
+    closeBtn.addEventListener("click", () => showModal(false));
+    modal.addEventListener("click", e => { if (e.target === modal) showModal(false); });
 
-  // ✅ Handle seat class selection & enable Book Now
-  document.querySelectorAll(".coach-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const trainId = btn.dataset.train;
-      const coachClass = btn.dataset.class;
-      const distance = parseFloat(btn.dataset.distance);
-      const detailsDiv = document.getElementById(`details-${trainId}`);
-      const card = btn.closest(".train-card");
-      const bookBtn = card.querySelector(".book-now");
-      const source = card.querySelector(".route").textContent.split("➜")[0].trim();
-      const destination = card.querySelector(".route").textContent.split("➜")[1].trim();
 
-      const trainData = seatAvailabilityData[trainId];
-      if (!trainData) return;
 
-      const matchingCoaches = Object.values(trainData).filter(c => c.class === coachClass);
-      const totalSeats = matchingCoaches.reduce((sum, c) => sum + (c.available_seats || 0), 0);
-      const farePerKm = fareMap[trainId]?.[coachClass];
-      const totalFare = (farePerKm * distance).toFixed(2);
+    /* ---------------------------------------------
+       RENDER CLASS DETAILS (Supports RAC/WL)
+    --------------------------------------------- */
+    function renderClassDetails(trainId, coachClass, distance, card) {
 
-      detailsDiv.innerHTML = `
-        <p><strong>Class:</strong> ${coachClass}</p>
-        <p><strong>Total Coaches:</strong> ${matchingCoaches.length}</p>
-        <p><strong>Total Available Seats:</strong> ${totalSeats}</p>
-        <p><strong>Fare:</strong> ₹${totalFare}</p>
-        <p style="color:#777;font-size:0.9rem;">(Distance: ${distance} km × ₹${farePerKm}/km)</p>
-      `;
-      detailsDiv.classList.remove("hidden");
+        const detailsDiv = document.getElementById(`details-${trainId}`);
+        const availability = seatAvailabilityData[trainId][coachClass];
+        const farePerKm = fareMap[trainId]?.[coachClass] || 0;
+        const totalFare = (farePerKm * distance).toFixed(2);
 
-      // ✅ Enable Book Now
-      bookBtn.disabled = false;
-      // ✅ Store data in button for redirect
-      bookBtn.dataset.selectedClass = coachClass;
-      bookBtn.dataset.totalFare = totalFare;
-      bookBtn.dataset.source = source;
-      bookBtn.dataset.destination = destination;
-    });
-  });
+        detailsDiv.classList.remove("hidden");
 
-  // ✅ Redirect to BookingServlet on click
-  document.querySelectorAll(".book-now").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const trainId = btn.dataset.train;
-      const selectedClass = btn.dataset.selectedClass;
-      const totalFare = btn.dataset.totalFare;
+        // CASE 1: Normal coaches (array)
+        if (Array.isArray(availability)) {
 
-      const card = btn.closest(".train-card");
-      const trainName = card.dataset.trainName;
+            let totalSeats = availability.reduce((sum, c) =>
+                sum + (c.available_seats || 0), 0
+            );
 
-      const source = btn.dataset.source;
-      const destination = btn.dataset.destination;
+            detailsDiv.innerHTML = `
+                <h3>${coachClass}</h3>
+                <p><strong>Total Seats Available:</strong> ${totalSeats}</p>
+                <p><strong>Fare:</strong> ₹${totalFare}</p>
+                <p style="font-size: 0.9rem; color:#666;">
+                    Distance: ${distance} km × ₹${farePerKm}/km
+                </p>
+            `;
 
-      const routes = JSON.parse(card.dataset.routes);
-
-      const srcStop = routes.find(r => r.station === source);
-      const destStop = routes.find(r => r.station === destination);
-
-      const params = {
-        trainId,
-        trainName,
-        classType: selectedClass,
-        source,
-        destination,
-        fare: totalFare,
-
-        // 👉 NEW:
-        sourceArrival: srcStop.arrival,
-        sourceDeparture: srcStop.departure,
-        destinationArrival: destStop.arrival,
-        destinationDeparture: destStop.departure
-      };
-
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = "BookingServlet";
-
-      Object.entries(params).forEach(([k, v]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = k;
-        input.value = v;
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
-    });
-  });
-
-  const swapBtn = document.getElementById("swapBtn");
-  const from = document.getElementById("searchFrom");
-  const to = document.getElementById("searchTo");
-
-  swapBtn.addEventListener("click", () => {
-      let temp = from.value;
-      from.value = to.value;
-      to.value = temp;
-
-      swapBtn.classList.add("swap-anim");
-      setTimeout(() => swapBtn.classList.remove("swap-anim"), 300);
-  });
-  
-  const prevBtn = document.getElementById("prevDay");
-    const nextBtn = document.getElementById("nextDay");
-    const modifyForm = document.getElementById("modifySearchForm");
-    const dateInput = document.getElementById("searchDate");
-
-    if (prevBtn && nextBtn && dateInput && modifyForm) {
-
-        function updateButtons() {
-            const minDate = new Date(dateInput.min);
-            const maxDate = new Date(dateInput.max);
-            const current = new Date(dateInput.value);
-
-            prevBtn.disabled = current <= minDate;
-            nextBtn.disabled = current >= maxDate;
-
-            prevBtn.classList.toggle("disabled", prevBtn.disabled);
-            nextBtn.classList.toggle("disabled", nextBtn.disabled);
+            enableBookNow(card, coachClass, totalFare);
+            return;
         }
 
-        function changeDate(offset) {
-            const minDate = new Date(dateInput.min);
-            const maxDate = new Date(dateInput.max);
-            let current = new Date(dateInput.value);
-
-            current.setDate(current.getDate() + offset);
-            if (current < minDate) current = minDate;
-            if (current > maxDate) current = maxDate;
-
-            dateInput.value = current.toISOString().split("T")[0];
-            updateButtons();
-            modifyForm.submit();
+        // CASE 2: RAC
+        if (availability && availability.status === "RAC") {
+            detailsDiv.innerHTML = `
+                <h3>${coachClass} - RAC</h3>
+                <p><strong>RAC Seats Available:</strong> ${availability.available_seats}</p>
+                <p><strong>Fare:</strong> ₹${totalFare}</p>
+            `;
+            enableBookNow(card, coachClass, totalFare);
+            return;
         }
 
-        prevBtn.addEventListener("click", () => changeDate(-1));
-        nextBtn.addEventListener("click", () => changeDate(1));
+        // CASE 3: WL
+        if (availability && availability.status === "WL") {
+            detailsDiv.innerHTML = `
+                <h3>${coachClass} - Waiting List</h3>
+                <p><strong>WL Positions Available:</strong> ${availability.available_seats}</p>
+                <p><strong>Fare:</strong> ₹${totalFare}</p>
+            `;
+            enableBookNow(card, coachClass, totalFare);
+            return;
+        }
 
-        updateButtons();
+        // CASE 4: Not available
+        detailsDiv.innerHTML = `
+            <h3>${coachClass}</h3>
+            <p>No tickets available</p>
+        `;
+        disableBookNow(card);
     }
 
 
+    function enableBookNow(card, coachClass, fare) {
+        const btn = card.querySelector(".book-now");
+        btn.disabled = false;
+        btn.dataset.selectedClass = coachClass;
+        btn.dataset.totalFare = fare;
+    }
+
+    function disableBookNow(card) {
+        const btn = card.querySelector(".book-now");
+        btn.disabled = true;
+        delete btn.dataset.selectedClass;
+    }
+
+    /* ---------------------------------------------
+       COACH BUTTON CLICK
+    --------------------------------------------- */
+    document.querySelectorAll(".coach-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const trainId = btn.dataset.train;
+            const coachClass = btn.dataset.class;
+            const distance = parseFloat(btn.dataset.distance);
+            const card = btn.closest(".train-card");
+
+            renderClassDetails(trainId, coachClass, distance, card);
+        });
+    });
+
+
+
+    /* ---------------------------------------------
+       BOOK NOW → BookingServlet
+    --------------------------------------------- */
+    document.querySelectorAll(".book-now").forEach(btn => {
+        btn.addEventListener("click", () => {
+
+            const card = btn.closest(".train-card");
+
+            const trainId = btn.dataset.train;
+            const trainName = card.dataset.trainName;
+            const selectedClass = btn.dataset.selectedClass;
+            const totalFare = btn.dataset.totalFare;
+
+            const [source, destination] =
+                card.querySelector(".route").textContent.split("➜").map(s => s.trim());
+
+            const routes = JSON.parse(card.dataset.routes);
+
+            // FIXED: Case-insensitive matching
+            const srcStop = routes.find(r =>
+                r.station.toLowerCase() === source.toLowerCase()
+            );
+            const destStop = routes.find(r =>
+                r.station.toLowerCase() === destination.toLowerCase()
+            );
+			
+			const travelDate = document.getElementById("searchDate").value;
+
+
+            const params = {
+                trainId,
+                trainName,
+                classType: selectedClass,
+                source,
+                destination,
+                fare: totalFare,
+				travelDate,
+                sourceArrival: srcStop?.arrival || "-",
+                sourceDeparture: srcStop?.departure || "-",
+                destinationArrival: destStop?.arrival || "-",
+                destinationDeparture: destStop?.departure || "-"
+            };
+
+            const form = document.createElement("form");
+            form.method = "POST";
+            form.action = "BookingServlet";
+
+            Object.entries(params).forEach(([k, v]) => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = k;
+                input.value = v;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+    });
+
+
+
+    /* ---------------------------------------------
+       SWAP BUTTON
+    --------------------------------------------- */
+    const from = document.getElementById("searchFrom");
+    const to = document.getElementById("searchTo");
+    const swapBtn = document.getElementById("swapBtn");
+
+    swapBtn.addEventListener("click", () => {
+        let tmp = from.value;
+        from.value = to.value;
+        to.value = tmp;
+
+        swapBtn.classList.add("swap-anim");
+        setTimeout(() => swapBtn.classList.remove("swap-anim"), 300);
+    });
+
+
+
+    /* ---------------------------------------------
+       DATE NAVIGATION
+    --------------------------------------------- */
+    const prevBtn = document.getElementById("prevDay");
+    const nextBtn = document.getElementById("nextDay");
+    const dateInput = document.getElementById("searchDate");
+    const modifyForm = document.getElementById("modifySearchForm");
+
+	if (prevBtn && nextBtn && dateInput && modifyForm) {
+
+	     function updateButtons() {
+	         const min = new Date(dateInput.min);
+	         const max = new Date(dateInput.max);
+	         const current = new Date(dateInput.value);
+
+	         prevBtn.disabled = current <= min;
+	         nextBtn.disabled = current >= max;
+
+	         prevBtn.classList.toggle("disabled", prevBtn.disabled);
+	         nextBtn.classList.toggle("disabled", nextBtn.disabled);
+	     }
+
+	     function changeDate(offset) {
+	         const min = new Date(dateInput.min);
+	         const max = new Date(dateInput.max);
+	         let current = new Date(dateInput.value);
+
+	         current.setDate(current.getDate() + offset);
+
+	         if (current < min) current = min;
+	         if (current > max) current = max;
+
+	         dateInput.value = current.toISOString().split("T")[0];
+	         updateButtons();
+	         modifyForm.submit();
+	     }
+
+	     prevBtn.addEventListener("click", () => changeDate(-1));
+	     nextBtn.addEventListener("click", () => changeDate(1));
+
+	     updateButtons();
+	 }
 });
-
-
-

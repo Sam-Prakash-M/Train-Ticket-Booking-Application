@@ -193,3 +193,72 @@ body {
     backdrop-filter: blur(14px);
     background: rgba(255,255,255,0.10);
 }
+/* ----------- Train Section Inside Card ----------- */
+
+.train-box {
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+}
+
+.train-top {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.train-logo {
+    width: 45px;
+    filter: drop-shadow(0 0 6px rgba(0,255,255,0.5));
+}
+
+.train-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.train-route-text {
+    font-size: 14px;
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Route Box */
+.train-route-box {
+    margin: 15px 0;
+    padding: 12px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.08);
+}
+
+.station {
+    text-align: center;
+}
+
+.station-name {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.station-time {
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.route-arrow-center span {
+    font-size: 28px;
+    color: cyan;
+    text-shadow: 0 0 8px rgba(0,255,255,0.6);
+}
+
+.train-class {
+    margin-top: 10px;
+    font-size: 14px;
+    opacity: 0.85;
+}

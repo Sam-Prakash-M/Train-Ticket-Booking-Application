@@ -58,8 +58,8 @@ public final class TrainDataFetcher {
 	}
 
 
-	public static JSONObject getSeatAvailabilityForTrain(JSONArray matchedTrainList) {
-		return DATABASE_CONNECTOR.getSeatAvailabilityForTrain(matchedTrainList);
+	public static JSONObject getSeatAvailabilityForTrain(JSONArray matchedTrainList,String journeyDate) {
+		return DATABASE_CONNECTOR.getSeatAvailabilityForTrain(matchedTrainList,journeyDate);
 	}
 
 

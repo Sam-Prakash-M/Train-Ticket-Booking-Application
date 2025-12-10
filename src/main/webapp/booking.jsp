@@ -8,8 +8,8 @@
 <title>Available Trains</title>
 <link rel="stylesheet"
 	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="booking.css?v=3">
-<script defer src="booking.js?v=3"></script>
+<link rel="stylesheet" href="booking.css?v=4">
+<script defer src="booking.js?v=6"></script>
 </head>
 <body>
 	<%
@@ -185,6 +185,11 @@
 				Iterator<String> it = farePerKm.keys();
 				while (it.hasNext()) {
 					String coach = it.next();
+					 // Hide button if class not in availability
+				    if (!seatAvailability.has(trainId) ||
+				        !seatAvailability.getJSONObject(trainId).has(coach)) {
+				        continue;  // Skip this coach
+				    }
 				%>
 				<button class="coach-btn" data-train="<%=trainId%>"
 					data-class="<%=coach%>" data-distance="<%=totalDistance%>"><%=coach%></button>

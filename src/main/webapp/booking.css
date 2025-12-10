@@ -483,5 +483,26 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
 }
+.status-box {
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 8px;
+    font-size: 15px;
+}
+
+.status-box.rac {
+    background: rgba(0, 136, 255, 0.15);
+    border-left: 4px solid #0088ff;
+}
+
+.status-box.wl {
+    background: rgba(255, 136, 0, 0.15);
+    border-left: 4px solid #ff8800;
+}
+
+.status-box.full {
+    background: rgba(255, 0, 0, 0.15);
+    border-left: 4px solid red;
+}
 
 
