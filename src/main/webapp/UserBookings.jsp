@@ -68,13 +68,13 @@
 										<!-- STATUS COLUMN -->
 										<td><c:choose>
 												<c:when test="${p.ticketStatus.startsWith('CNF')}">
-													<span class="tag tag-cnf">${p.ticketStatus}</span>
+													<span class="tag tag-cnf">CNF</span>
 												</c:when>
 												<c:when test="${p.ticketStatus.startsWith('RAC')}">
-													<span class="tag tag-rac">${p.ticketStatus}</span>
+													<span class="tag tag-rac">RAC</span>
 												</c:when>
 												<c:when test="${p.ticketStatus.startsWith('WL')}">
-													<span class="tag tag-wl">${p.ticketStatus}</span>
+													<span class="tag tag-wl">WL</span>
 												</c:when>
 											</c:choose></td>
 
@@ -148,13 +148,13 @@
 										<!-- STATUS COLUMN -->
 										<td><c:choose>
 												<c:when test="${p.ticketStatus.startsWith('CNF')}">
-													<span class="tag tag-cnf">${p.ticketStatus}</span>
+													<span class="tag tag-cnf">CNF</span>
 												</c:when>
 												<c:when test="${p.ticketStatus.startsWith('RAC')}">
-													<span class="tag tag-rac">${p.ticketStatus}</span>
+													<span class="tag tag-rac">RAC</span>
 												</c:when>
 												<c:when test="${p.ticketStatus.startsWith('WL')}">
-													<span class="tag tag-wl">${p.ticketStatus}</span>
+													<span class="tag tag-wl">WL</span>
 												</c:when>
 											</c:choose></td>
 
@@ -228,13 +228,13 @@
 										<!-- STATUS COLUMN -->
 										<td><c:choose>
 												<c:when test="${p.ticketStatus.startsWith('CNF')}">
-													<span class="tag tag-cnf">${p.ticketStatus}</span>
+													<span class="tag tag-cnf">CNF</span>
 												</c:when>
 												<c:when test="${p.ticketStatus.startsWith('RAC')}">
-													<span class="tag tag-rac">${p.ticketStatus}</span>
+													<span class="tag tag-rac">RAC</span>
 												</c:when>
 												<c:when test="${p.ticketStatus.startsWith('WL')}">
-													<span class="tag tag-wl">${p.ticketStatus}</span>
+													<span class="tag tag-wl">WL</span>
 												</c:when>
 											</c:choose></td>
 
