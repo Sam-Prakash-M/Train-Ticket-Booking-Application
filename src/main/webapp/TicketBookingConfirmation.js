@@ -1,44 +1,40 @@
-(function() {
-	function $(q) { return document.querySelector(q); }
+document.addEventListener("DOMContentLoaded", () => {
 
-	// Snack notification
-	function showSnack(msg) {
-		const s = document.createElement('div');
-		s.className = 'snack';
-		s.innerText = msg;
-		document.body.appendChild(s);
-
-		setTimeout(() => {
-			s.style.opacity = '0';
-			s.addEventListener('transitionend', () => s.remove());
-		}, 1800);
+	// 1. Theme Logic
+	const toggle = document.getElementById("themeToggle");
+	if (toggle) {
+		toggle.addEventListener("click", () => {
+			const root = document.documentElement;
+			const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+			root.setAttribute("data-theme", next);
+			localStorage.setItem("sam_theme", next);
+		});
 	}
 
-	// Add ripple effect to buttons
-	document.addEventListener("click", function(e) {
-		if (e.target.classList.contains("btn")) {
-			const circle = document.createElement("span");
-			circle.classList.add("ripple");
-			e.target.appendChild(circle);
+	// 2. Print Logic
+	const printBtn = document.getElementById("printBtn");
+	if (printBtn) {
+		printBtn.addEventListener("click", () => {
+			window.print();
+		});
+	}
 
-			setTimeout(() => circle.remove(), 600);
-		}
-	});
-
-	document.addEventListener('DOMContentLoaded', () => {
-		const copyBtn = $('#copyPnrBtn');
-	
-		if (copyBtn) {
-			copyBtn.addEventListener('click', () => {
-				const pnr = $('#pnrValue')?.textContent?.trim();
-				if (!pnr) return showSnack("PNR not found");
-
-				navigator.clipboard.writeText(pnr)
-					.then(() => showSnack("PNR copied!"))
-					.catch(() => showSnack("Copy failed"));
+	// 3. Copy PNR Logic
+	const copyBtn = document.getElementById("copyPnr");
+	if (copyBtn) {
+		copyBtn.addEventListener("click", () => {
+			const pnr = document.getElementById("pnrText").textContent;
+			navigator.clipboard.writeText(pnr).then(() => {
+				showToast("PNR Copied!");
 			});
-		}
+		});
+	}
 
-		
-	});
-})();
+	// 4. Toast
+	function showToast(msg) {
+		const t = document.getElementById("toast");
+		t.textContent = msg;
+		t.classList.add("show");
+		setTimeout(() => t.classList.remove("show"), 2000);
+	}
+});

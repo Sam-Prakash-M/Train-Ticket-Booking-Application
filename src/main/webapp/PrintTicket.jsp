@@ -1,247 +1,462 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 
+<c:set var="tkt" value="${not empty ticket ? ticket : ConfirmedTicket}" />
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Train Ticket (ERS)</title>
+<meta charset="UTF-8">
+<title>E-Ticket: ${tkt.pnrNumber}</title>
+<link
+	href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+	rel="stylesheet">
 
 <style>
-/* ===== Global Print Styling ===== */
-body {
-	font-family: "Segoe UI", Arial, sans-serif;
-	-webkit-print-color-adjust: exact;
-	print-color-adjust: exact;
-	background: #f8f9fc;
+/* ================= VARIABLES ================= */
+:root {
+	--primary: #1a1a1a;
+	--secondary: #555;
+	--border: #e0e0e0;
+	--bg: #f4f6f8;
+	--accent: #2563eb;
+}
+
+/* ================= RESET ================= */
+* {
+	box-sizing: border-box;
 	margin: 0;
-	padding: 25px;
+	padding: 0;
 }
 
-.page {
-	width: 210mm;
-	min-height: 297mm;
-	background: #ffffff;
-	padding: 22mm;
-	margin: auto;
-	border-radius: 10px;
-	border: 1px solid #d1d9e6;
-}
-
-/* ===== Header ===== */
-.header-container {
-	text-align: center;
-	margin-bottom: 15px;
-}
-
-.header-title {
-	font-size: 22px;
-	font-weight: 700;
-	color: #1a2b49;
-}
-
-.subheader {
-	font-size: 14px;
-	color: #5f6c85;
-	margin-bottom: 20px;
-}
-
-.logo-row {
+body {
+	background-color: var(--bg);
+	font-family: 'Inter', sans-serif;
+	color: var(--primary);
 	display: flex;
 	justify-content: center;
-	gap: 160px;
-	margin-bottom: 10px;
+	padding: 40px 0;
+}
+
+/* ================= TICKET CONTAINER ================= */
+.ticket-container {
+	width: 210mm; /* A4 Width */
+	min-height: 290mm;
+	background: white;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+	position: relative;
+	overflow: hidden;
+	padding-bottom: 100px;
+}
+
+/* ================= HEADER ================= */
+.header {
+	padding: 30px 40px;
+	border-bottom: 2px dashed var(--border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.brand-section {
+	display: flex;
+	align-items: center;
+	gap: 15px;
 }
 
 .logo {
-	width: 90px;
-	opacity: 0.95;
+	width: 50px;
+	height: 50px;
+	object-fit: contain;
 }
 
-/* ===== Section Cards ===== */
-.section-card {
-	margin-top: 25px;
-	border-radius: 12px;
-	border: 1px solid #cfd7e6;
-	padding: 12px 15px 15px 15px;
-	background: #fdfdfd;
+.brand-name {
+	font-family: 'Poppins', sans-serif;
+	font-weight: 700;
+	font-size: 22px;
 }
 
-.section-title {
+.doc-type {
+	font-size: 12px;
+	color: var(--secondary);
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	margin-top: 2px;
+}
+
+.pnr-box {
+	text-align: right;
+}
+
+.pnr-label {
+	font-size: 11px;
+	color: var(--secondary);
 	font-weight: 600;
-	padding: 6px 0;
-	font-size: 15px;
-	color: #1d3557;
-	border-bottom: 1px solid #d6dce8;
-	margin-bottom: 10px;
+	letter-spacing: 1px;
 }
 
-/* ===== Modern Tables ===== */
-table {
+.pnr-value {
+	font-family: 'Poppins', sans-serif;
+	font-size: 28px;
+	font-weight: 700;
+	letter-spacing: 1px;
+}
+
+/* ================= JOURNEY HERO ================= */
+.journey-hero {
+	padding: 30px 40px;
+	background: #fafafa;
+	border-bottom: 1px solid var(--border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.station-info {
+	flex: 1;
+}
+
+.station-code {
+	font-size: 24px;
+	font-weight: 800;
+	font-family: 'Poppins', sans-serif;
+}
+
+.station-name {
+	font-size: 14px;
+	color: var(--secondary);
+}
+
+.route-visual {
+	flex: 2;
+	text-align: center;
+	position: relative;
+	padding: 0 20px;
+}
+
+.train-name {
+	font-weight: 700;
+	font-size: 16px;
+	margin-bottom: 5px;
+	display: block;
+}
+
+.train-number {
+	font-size: 13px;
+	color: var(--secondary);
+	background: #eee;
+	padding: 2px 8px;
+	border-radius: 4px;
+}
+
+.arrow-line {
+	margin-top: 10px;
+	height: 2px;
+	background: var(--border);
+	position: relative;
+	width: 100%;
+}
+
+.arrow-line::after {
+	content: '➜';
+	position: absolute;
+	right: 0;
+	top: -8px;
+	font-size: 14px;
+	color: var(--secondary);
+}
+
+.right-align {
+	text-align: right;
+}
+
+/* ================= META GRID ================= */
+.meta-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 20px;
+	padding: 20px 40px;
+	border-bottom: 1px solid var(--border);
+}
+
+.meta-item label {
+	display: block;
+	font-size: 11px;
+	color: var(--secondary);
+	text-transform: uppercase;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.meta-item span {
+	display: block;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+/* ================= TABLE ================= */
+.passenger-section {
+	padding: 30px 40px;
+}
+
+.sec-title {
+	font-size: 14px;
+	font-weight: 700;
+	text-transform: uppercase;
+	margin-bottom: 15px;
+	border-left: 4px solid var(--primary);
+	padding-left: 10px;
+}
+
+.p-table {
 	width: 100%;
 	border-collapse: collapse;
-	margin-top: 8px;
+	margin-bottom: 20px;
 }
 
-th {
-	background: #eef3fc;
-	border: 1px solid #d3d8e6;
-	padding: 8px;
+.p-table th {
+	text-align: left;
+	font-size: 12px;
+	color: var(--secondary);
+	text-transform: uppercase;
+	padding: 10px 0;
+	border-bottom: 2px solid var(--border);
+}
+
+.p-table td {
+	padding: 12px 0;
+	font-size: 14px;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.p-table tr:last-child td {
+	border-bottom: none;
+}
+
+.status-badge {
+	font-weight: 700;
 	font-size: 13px;
+}
+
+.seat-badge {
+	font-family: monospace;
+	font-size: 15px;
+	font-weight: 700;
+	background: #f0f0f0;
+	padding: 4px 8px;
+	border-radius: 4px;
+}
+
+/* ================= FOOTER ================= */
+.footer-section {
+	padding: 20px 40px;
+	background: #fafafa;
+	border-top: 1px dashed var(--border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+}
+
+.terms {
+	font-size: 11px;
+	color: var(--secondary);
+	width: 60%;
+	line-height: 1.5;
+}
+
+.qr-box {
+	text-align: right;
+}
+
+.qr-img {
+	width: 100px;
+	height: 100px;
+	border: 4px solid white;
+	box-shadow: 0 0 0 1px var(--border);
+}
+
+/* ================= PRINT ================= */
+.print-fab {
+	position: fixed;
+	bottom: 30px;
+	right: 30px;
+	background: var(--accent);
+	color: white;
+	padding: 15px 30px;
+	border-radius: 50px;
 	font-weight: 600;
-	color: #2a3350;
+	cursor: pointer;
+	border: none;
+	z-index: 1000;
+	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-td {
-	border: 1px solid #e4e6eb;
-	padding: 7px 8px;
-	font-size: 13px;
-}
-
-/* Passenger Table Row Highlight */
-tbody tr:nth-child(odd) {
-	background: #fafbff;
-}
-
-/* ===== QR Code ===== */
-.qr {
-	width: 160px;
-	margin-top: 18px;
-	float: right;
-	border: 1px solid #d0d4df;
-	padding: 6px;
-	border-radius: 6px;
-}
-
-/* Print Background */
 @media print {
 	body {
-		background: white !important;
+		background: white;
+		padding: 0;
+		display: block;
 	}
+	.ticket-container {
+		box-shadow: none;
+		width: 100%;
+		min-height: auto;
+		border: none;
+		padding-bottom: 0;
+	}
+	.print-fab {
+		display: none;
+	}
+	.header, .journey-hero, .footer-section {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+	@page {
+		margin: 0;
+		size: A4;
+	}
+	@media print {
+    .footer-section {
+        position: static !important;
+    }
+}
 }
 </style>
-
 </head>
+<body>
 
-<body onload="window.print()">
+	<button class="print-fab" onclick="window.print()">Print
+		Ticket</button>
 
-	<div class="page">
+	<div class="ticket-container">
 
-		<!-- LOGOS -->
-		<div class="logo-row">
-			<img src="train.png" class="logo"> <img src="irctc.png"
-				class="logo">
-		</div>
+		<header class="header">
+			<div class="brand-section">
+				<img src="train_logo.png" alt="Logo" class="logo"
+					onerror="this.style.display='none'">
+				<div>
+					<div class="brand-name">Sam Railways</div>
+					<div class="doc-type">Electronic Reservation Slip</div>
+				</div>
+			</div>
+			<div class="pnr-box">
+				<div class="pnr-label">PNR NUMBER</div>
+				<div class="pnr-value">${tkt.pnrNumber}</div>
+			</div>
+		</header>
 
-		<div class="header-container">
-			<div class="header-title">Electronic Reservation Slip (ERS)</div>
-			<div class="subheader">Normal User</div>
-		</div>
+		<section class="journey-hero">
+			<div class="station-info">
+				<div class="station-code">${tkt.sourceArr}</div>
+				<div class="station-name">Source</div>
+			</div>
+			<div class="route-visual">
+				<span class="train-name">${tkt.trainName}</span> <span
+					class="train-number">${tkt.trainId}</span>
+				<div class="arrow-line"></div>
+			</div>
+			<div class="station-info right-align">
+				<div class="station-code">${tkt.destinationArr}</div>
+				<div class="station-name">Destination</div>
+			</div>
+		</section>
 
-		<!-- JOURNEY DETAILS -->
-		<div class="section-card">
-			<div class="section-title">Journey Details</div>
+		<section class="meta-grid">
+			<div class="meta-item">
+				<label>Date of Journey</label> <span>${tkt.bookingDate}</span>
+			</div>
+			<div class="meta-item">
+				<label>Class</label> <span>${tkt.className}</span>
+			</div>
+			<div class="meta-item">
+				<label>Total Fare</label> <span>₹ ${tkt.totalFare}</span>
+			</div>
+			<div class="meta-item">
+				<label>Status</label> <span>CONFIRMED</span>
+			</div>
+		</section>
 
-			<table>
-				<tr>
-					<th>PNR</th>
-					<td>${ticket.pnrNumber}</td>
+		<section class="passenger-section">
+			<div class="sec-title">Passenger Details</div>
 
-					<th>Train</th>
-					<td>${ticket.trainName}(${ticket.trainId})</td>
-				</tr>
-
-				<tr>
-					<th>From</th>
-					<td>${ticket.sourceArr}</td>
-
-					<th>To</th>
-					<td>${ticket.destinationArr}</td>
-				</tr>
-
-				<tr>
-					<th>Class</th>
-					<td>${ticket.className}</td>
-
-					<th>Booking Date</th>
-					<td>${ticket.bookingDate}</td>
-				</tr>
-			</table>
-		</div>
-
-		<!-- PASSENGERS -->
-		<div class="section-card">
-			<div class="section-title">Passenger Details</div>
-
-			<table>
+			<table class="p-table">
 				<thead>
 					<tr>
-						<th>#</th>
-						<th>Name</th>
-						<th>Age</th>
-						<th>Gender</th>
-						<th>Status</th>
-						<th>Coach</th>
-						<th>Seat</th>
+						<th width="10%">#</th>
+						<th width="40%">Name</th>
+						<th width="15%">Age / Sex</th>
+						<th width="20%">Status</th>
+						<th width="15%">Seat</th>
 					</tr>
 				</thead>
-
 				<tbody>
-					<c:forEach items="${ticket.associatedPassenger}" var="p"
-						varStatus="loop">
-						<tr>
-							<td>${loop.index + 1}</td>
-							<td>${p.name}</td>
-							<td>${p.age}</td>
-							<td>${p.gender}</td>
+					<c:choose>
+						<c:when test="${not empty tkt.associatedPassenger}">
+							<c:forEach var="p" items="${tkt.associatedPassenger}"
+								varStatus="loop">
+								<tr>
+									<td>${loop.index + 1}</td>
+									<td><strong>${p.name}</strong></td>
+									<td>${p.age}/${p.gender}</td>
 
-							<!-- Status -->
-							<td><c:choose>
-									<c:when test="${p.ticketStatus.startsWith('CNF')}">
-                                CNF (${p.preference})
-                            </c:when>
-									<c:when test="${p.ticketStatus.startsWith('RAC')}">
-                                RAC (${p.ticketStatus})
-                            </c:when>
-									<c:when test="${p.ticketStatus.startsWith('WL')}">
-                                WL (${p.ticketStatus})
-                            </c:when>
-									<c:otherwise> -- </c:otherwise>
-								</c:choose></td>
+									<td><c:choose>
+											<c:when test="${p.ticketStatus.startsWith('CNF')}">
+												<span style="color: green; font-weight: 700">CNF</span>
+											</c:when>
+											<c:when test="${p.ticketStatus.startsWith('RAC')}">
+												<span style="color: orange; font-weight: 700">RAC</span>
+											</c:when>
+											<c:when test="${p.ticketStatus.startsWith('WL')}">
+												<span style="color: red; font-weight: 700">WL</span>
+											</c:when>
+											<c:otherwise>${p.ticketStatus}</c:otherwise>
+										</c:choose></td>
 
-							<!-- Coach -->
-							<td><c:choose>
-									<c:when test="${p.ticketStatus.startsWith('CNF')}">
-                                ${p.seatMetaData.coachNo()}
-                            </c:when>
-									<c:otherwise> -- </c:otherwise>
-								</c:choose></td>
-
-							<!-- Seat -->
-							<td><c:choose>
-									<c:when test="${p.ticketStatus.startsWith('CNF')}">
-                                ${p.seatMetaData.seatNumber()}
-                            </c:when>
-
-									<c:when test="${p.ticketStatus.startsWith('RAC')}">
-                                ${p.ticketStatus}/${p.seatMetaData.seatNumber()}
-                            </c:when>
-
-									<c:when test="${p.ticketStatus.startsWith('WL')}">
-                                ${p.ticketStatus}/${p.seatMetaData.seatNumber()}
-                            </c:when>
-
-									<c:otherwise> -- </c:otherwise>
-								</c:choose></td>
-						</tr>
-					</c:forEach>
+									<td><c:choose>
+											<c:when test="${not empty p.seatMetaData}">
+												<span class="seat-badge">${p.seatMetaData.coachNo} -
+													${p.seatMetaData.seatNumber}</span>
+											</c:when>
+											<c:otherwise>--</c:otherwise>
+										</c:choose></td>
+								</tr>
+							</c:forEach>
+						</c:when>
+						<c:otherwise>
+							<tr>
+								<td colspan="5"
+									style="text-align: center; padding: 20px; color: #999; font-style: italic;">No
+									passenger details available for this PNR.</td>
+							</tr>
+						</c:otherwise>
+					</c:choose>
 				</tbody>
 			</table>
-		</div>
+		</section>
 
-		<!-- QR -->
-		<img src="QR?pnr=${ticket.pnrNumber}" class="qr">
+		<footer class="footer-section">
+			<div class="terms">
+				<strong>Instructions:</strong><br> 1. Original ID proof
+				required.<br> 2. Check departure time.<br> 3. Generated by
+				Sam Railways.
+			</div>
+			<div class="qr-box">
+				<img
+					src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${tkt.pnrNumber}"
+					class="qr-img" alt="QR">
+			</div>
+		</footer>
 
 	</div>
+
+	<script>
+		window.onload = function() {
+			setTimeout(function() {
+				window.print();
+			}, 800);
+		};
+	</script>
 
 </body>
 </html>

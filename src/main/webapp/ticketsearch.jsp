@@ -1,136 +1,193 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page session="false" %>
-
+<%
+    // Date Logic
+    java.time.LocalDate today = java.time.LocalDate.now();
+    java.time.LocalDate maxDate = today.plusDays(60);
+    String todayFormatted = today.toString();
+    String maxDateFormatted = maxDate.toString();
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Train Booking Portal</title>
+    <meta charset="UTF-8">
+    <title>Sam Railways | Booking Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet"/>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<!-- FontAwesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<!-- Flatpickr for modern calendar -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-<link rel="stylesheet" href="ticketsearch.css?v=5">
-<script defer src="ticketsearch.js?v=5"></script>
+    <link rel="stylesheet" href="ticketsearch.css?v=2025">
+    
+    <script>
+        const savedTheme = localStorage.getItem('sam_theme') || 'light';
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <script defer src="ticketsearch.js?v=2025"></script>
 </head>
 <body>
 
-	<!-- Loader -->
-	<div class="loader-wrapper" id="pageLoader">
-		<div class="train-track">
-			<div class="train-body">🚆</div>
-		</div>
-		<p class="loader-text">Preparing Tracks...</p>
-	</div>
+    <div id="pageLoader" class="loader-overlay">
+        <div class="loader-content">
+            <div class="train-icon"><i class="ri-train-line"></i></div>
+            <div class="loader-bar"></div>
+            <p>Loading Experience...</p>
+        </div>
+    </div>
 
-	<!-- Theme toggle -->
-	<div class="theme-toggle" id="themeToggle" title="Toggle Dark/Light">🌙</div>
+    <div class="ambient-light"></div>
 
-	<!-- App container -->
-	<div class="app-wrap">
-		<div class="tab-container">
-			<button class="tab active">Book Ticket</button>
-			<button class="tab">PNR Status</button>
-			<button class="tab">Charts/Vacancy</button>
-		</div>
+    <div class="app-container">
+        
+        <nav class="navbar glass">
+            <div class="nav-brand">
+                <div class="logo-icon"><i class="ri-train-fill"></i></div>
+                <div class="brand-info">
+                    <span class="brand-name">Sam Railways</span>
+                </div>
+            </div>
+            <div class="nav-links">
+                <a href="#" class="active"><i class="ri-home-5-line"></i> Dashboard</a>
+                <a href="#"><i class="ri-user-line"></i> Profile</a>
+            </div>
+            <div class="nav-actions">
+                <button id="themeToggle" class="btn-icon" aria-label="Toggle Theme">
+                    <i class="ri-moon-clear-line"></i>
+                </button>
+            </div>
+        </nav>
 
-		<div class="card">
-			<%
-			java.time.LocalDate today = java.time.LocalDate.now();
-			java.time.LocalDate maxDate = today.plusDays(60);
-			String todayFormatted = today.toString();
-			String maxDateFormatted = maxDate.toString();
-			%>
+        <main class="main-content">
+            
+            <div class="booking-card glass">
+                
+                <div class="tab-header">
+                    <button class="tab-btn active" data-target="book-ticket">
+                        <i class="ri-ticket-2-line"></i> Book Ticket
+                    </button>
+                    <button class="tab-btn" data-target="pnr-status">
+                        <i class="ri-qr-code-line"></i> PNR Status
+                    </button>
+                    <button class="tab-btn" data-target="chart-vacancy">
+                        <i class="ri-file-list-3-line"></i> Charts
+                    </button>
+                </div>
 
-			<!-- Book Ticket -->
-			<section class="search-container active">
-				<h1>Book Your Train Ticket</h1>
-				<form action="SearchServlet" method="get" class="search-form">
-					<div class="form-row route-row">
-						<div class="form-group">
-							<label for="source">From</label>
-							<input type="text" id="source" name="fromStation" placeholder="Enter source station">
-						</div>
+                <section id="book-ticket" class="tab-content active">
+                    <div class="content-header">
+                        <h2>Plan Your Journey</h2>
+                        <p>Select your route and preferences below.</p>
+                    </div>
 
-						<div class="swap-icon" id="swapStations">
-							<i class="fa-solid fa-right-left"></i>
-						</div>
+                    <form action="SearchServlet" method="get" class="modern-form">
+                        
+                        <div class="route-grid">
+                            <div class="input-wrap">
+                                <i class="ri-map-pin-line icon"></i>
+                                <input type="text" id="source" name="fromStation" placeholder="Source Station" required autocomplete="off">
+                                <label>From</label>
+                            </div>
 
-						<div class="form-group">
-							<label for="destination">To</label>
-							<input type="text" id="destination" name="toStation" placeholder="Enter destination station">
-						</div>
-					</div>
+                            <button type="button" id="swapStations" class="swap-btn">
+                                <i class="ri-arrow-left-right-line"></i>
+                            </button>
 
-					<div class="form-group">
-						<label>Date</label>
-						<input id="travelDate" type="text" name="travelDate"
-							data-min="<%=todayFormatted%>" data-max="<%=maxDateFormatted%>">
-					</div>
+                            <div class="input-wrap">
+                                <i class="ri-map-pin-range-line icon"></i>
+                                <input type="text" id="destination" name="toStation" placeholder="Destination Station" required autocomplete="off">
+                                <label>To</label>
+                            </div>
+                        </div>
 
-					<div class="form-group">
-						<label>Class</label>
-						<select name="trainClass" required>
-							<option>All Classes</option>
-							<option>AC 3 Tier (3A)</option>
-							<option>AC 2 Tier (2A)</option>
-							<option>Sleeper (SL)</option>
-							<option>Chair Car (CC)</option>
-							<option>Second Sitting (2S)</option>
-						</select>
-					</div>
+                        <div class="options-grid">
+                            <div class="input-wrap">
+                                <i class="ri-calendar-event-line icon"></i>
+                                <input id="travelDate" type="text" name="travelDate" 
+                                       data-min="<%=todayFormatted%>" 
+                                       data-max="<%=maxDateFormatted%>" placeholder="Select Date">
+                                <label>Date</label>
+                            </div>
 
-					<div class="form-group">
-						<label>Quota</label>
-						<select name="quota" required>
-							<option>General</option>
-							<option>Ladies</option>
-							<option>Senior Citizen</option>
-							<option>Person with Disability</option>
-							<option>Tatkal</option>
-							<option>Premium Tatkal</option>
-						</select>
-					</div>
+                            <div class="input-wrap">
+                                <i class="ri-armchair-line icon"></i>
+                                <select name="trainClass" required>
+                                    <option value="ALL">All Classes</option>
+                                    <option value="3A">AC 3 Tier (3A)</option>
+                                    <option value="2A">AC 2 Tier (2A)</option>
+                                    <option value="SL">Sleeper (SL)</option>
+                                    <option value="CC">Chair Car (CC)</option>
+                                    <option value="2S">Second Sitting (2S)</option>
+                                </select>
+                                <label>Class</label>
+                            </div>
 
-					<button type="submit" class="btn">Search Trains</button>
-				</form>
-			</section>
+                            <div class="input-wrap">
+                                <i class="ri-vip-crown-line icon"></i>
+                                <select name="quota" required>
+                                    <option value="GN">General</option>
+                                    <option value="LD">Ladies</option>
+                                    <option value="SS">Senior Citizen</option>
+                                    <option value="PWD">Person with Disability</option>
+                                    <option value="TQ">Tatkal</option>
+                                </select>
+                                <label>Quota</label>
+                            </div>
+                        </div>
 
-			<!-- PNR -->
-			<section class="search-container">
-				<h1>Check PNR Status</h1>
-				<form action="PNRServlet" method="get" class="search-form">
-					<div class="form-group">
-						<label>PNR Number</label>
-						<input type="text" name="pnr" maxlength="10" placeholder="Enter 10-digit PNR" required>
-					</div>
-					<button type="submit" class="btn">Check Status</button>
-				</form>
-			</section>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            Search Trains <i class="ri-arrow-right-line"></i>
+                        </button>
+                    </form>
+                </section>
 
-			<!-- Chart -->
-			<section class="search-container">
-				<h1>Chart / Vacancy</h1>
-				<form action="ChartServlet" method="get" class="search-form">
-					<div class="form-group">
-						<label>Train Number</label>
-						<input type="text" name="trainNo" placeholder="Enter Train Number" required>
-					</div>
-					<div class="form-group">
-						<label>Date</label>
-						<input id="chartDate" type="text" name="chartDate"
-							data-min="<%=todayFormatted%>" data-max="<%=maxDateFormatted%>">
-					</div>
-					<button type="submit" class="btn">Check Chart</button>
-				</form>
-			</section>
+                <section id="pnr-status" class="tab-content">
+                    <div class="content-header">
+                        <h2>Check PNR Status</h2>
+                        <p>Enter your 10-digit PNR number to check live status.</p>
+                    </div>
+                    <form action="PNRServlet" method="get" class="modern-form">
+                        <div class="input-wrap">
+                            <i class="ri-hashtag icon"></i>
+                            <input type="text" name="pnr" maxlength="10" placeholder="e.g. 4251234567" required>
+                            <label>PNR Number</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            Check Status
+                        </button>
+                    </form>
+                </section>
 
-		</div>
-	</div>
+                <section id="chart-vacancy" class="tab-content">
+                    <div class="content-header">
+                        <h2>Charts & Vacancy</h2>
+                        <p>See reserved charts and vacant berths.</p>
+                    </div>
+                    <form action="ChartServlet" method="get" class="modern-form">
+                        <div class="options-grid">
+                            <div class="input-wrap">
+                                <i class="ri-train-line icon"></i>
+                                <input type="text" name="trainNo" placeholder="Train No." required>
+                                <label>Train Number</label>
+                            </div>
+                            <div class="input-wrap">
+                                <i class="ri-calendar-line icon"></i>
+                                <input id="chartDate" type="text" name="chartDate" 
+                                       data-min="<%=todayFormatted%>" 
+                                       data-max="<%=maxDateFormatted%>" placeholder="Date">
+                                <label>Journey Date</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            Get Charts
+                        </button>
+                    </form>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
 </body>
 </html>

@@ -5,39 +5,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Available Trains</title>
-<link rel="stylesheet"
-	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="booking.css?v=4">
-<script defer src="booking.js?v=6"></script>
+<title>Available Trains | Sam Railways</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link
+	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
+	rel="stylesheet" />
+
+<link rel="stylesheet" href="booking.css?v=2025_2">
+
+<script>
+	const savedTheme = localStorage.getItem('sam_theme') || 'light';
+	if (savedTheme === 'dark')
+		document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+<script defer src="booking.js?v=2025_2"></script>
 </head>
 <body>
-	<%
-	HttpSession currentSession = request.getSession(false); // Do NOT create session
-	System.out.println("Current Session " + currentSession);
 
-	if (currentSession == null) {
-		// User directly accessed the page (no session created)
+	<%
+	HttpSession currentSession = request.getSession(false);
+	if (currentSession == null || currentSession.getAttribute("user_name") == null) {
 		request.setAttribute("message", "Please log in to continue.");
 		RequestDispatcher rd = request.getRequestDispatcher("login.jsp");
 		rd.forward(request, response);
 		return;
 	}
-
 	String userName = (String) currentSession.getAttribute("user_name");
 
-	System.out.println("Current UserName : " + userName);
-	if (userName == null) {
-		// Session existed earlier but expired
-		request.setAttribute("message", "Your session expired. Please log in again.");
-		RequestDispatcher rd = request.getRequestDispatcher("login.jsp");
-		rd.forward(request, response);
-		return;
-	}
-	%>
-
-
-	<%
+	// Logic: Data Retrieval (Kept existing logic)
 	JSONArray matchedTrains = (JSONArray) request.getAttribute("MatchedTrainList");
 	Map<String, String> trainData = (Map<String, String>) request.getAttribute("TrainData");
 	JSONObject seatAvailability = (JSONObject) request.getAttribute("TrainSeatAvailability");
@@ -47,195 +43,270 @@
 	java.time.LocalDate maxDate = today.plusDays(60);
 	String todayFormatted = today.toString();
 	String maxDateFormatted = maxDate.toString();
+	String travelDate = request.getParameter("travelDate");
 	%>
 
-	<div class="container">
-		<div class="search-header">
-			<form id="modifySearchForm" action="SearchServlet" method="get"
-				class="modify-form">
-
-				<div class="route-row">
-					<div class="field-group">
-						<label>From</label> <input type="text" name="fromStation"
-							id="searchFrom" value="<%=source%>">
-					</div>
-
-					<div class="swap-icon-horizontal" id="swapBtn">
-						<i class="fa-solid fa-right-left"></i>
-					</div>
-
-					<div class="field-group">
-						<label>To</label> <input type="text" name="toStation"
-							id="searchTo" value="<%=destination%>">
-					</div>
-				</div>
-
-
-				<div class="field-group">
-					<label>Date</label> <input type="date" name="travelDate"
-						id="searchDate" value="<%=request.getParameter("travelDate")%>"
-						min="<%=todayFormatted%>" max="<%=maxDateFormatted%>">
-
-				</div>
-
-				<div class="field-group">
-					<label>Class</label> <select name="trainClass" id="searchClass">
-						<option>All Classes</option>
-						<option>AC 3 Tier (3A)</option>
-						<option>AC 2 Tier (2A)</option>
-						<option>Sleeper (SL)</option>
-						<option>Chair Car (CC)</option>
-						<option>Second Sitting (2S)</option>
-					</select>
-				</div>
-
-				<div class="field-group">
-					<label>Quota</label> <select name="quota">
-						<option>General</option>
-						<option>Ladies</option>
-						<option>Tatkal</option>
-						<option>Premium Tatkal</option>
-						<option>Senior Citizen</option>
-						<option>Person with Disability</option>
-					</select>
-				</div>
-
-				<button type="submit" class="modify-btn">Modify Search</button>
-
-			</form>
-
-			<div class="date-nav">
-				<button id="prevDay" class="nav-btn">⬅ Previous Day</button>
-				<button id="nextDay" class="nav-btn">Next Day ➡</button>
+	<div id="pageLoader" class="loader-overlay">
+		<div class="loader-content">
+			<div class="train-icon">
+				<i class="ri-train-line"></i>
 			</div>
+			<div class="loader-bar"></div>
+			<p>Fetching Schedules...</p>
 		</div>
-
 	</div>
 
+	<div class="ambient-light"></div>
 
-	<!-- Loader -->
-	<div id="pageLoader" class="loader-overlay hidden">
-		<div class="spinner"></div>
-		<div class="loader-text">Loading trains...</div>
-	</div>
+	<div class="app-container">
 
-	<main class="container">
-		<h1 class="page-title">🚆 Available Trains</h1>
-
-
-		<%
-		if (matchedTrains != null && matchedTrains.length() > 0) {
-			for (int i = 0; i < matchedTrains.length(); i++) {
-				JSONObject train = matchedTrains.getJSONObject(i);
-				String trainId = train.getString("train_id");
-				String trainName = trainData.get(trainId);
-				JSONObject farePerKm = train.getJSONObject("fare_per_km");
-
-				JSONArray routes = train.getJSONArray("routes");
-				double srcDist = 0, destDist = 0;
-				for (int j = 0; j < routes.length(); j++) {
-			JSONObject stop = routes.getJSONObject(j);
-			if (stop.getString("station").equalsIgnoreCase(source))
-				srcDist = stop.getDouble("distance_from_start");
-			if (stop.getString("station").equalsIgnoreCase(destination))
-				destDist = stop.getDouble("distance_from_start");
-				}
-				double totalDistance = Math.abs(destDist - srcDist);
-
-				JSONArray availableDays = train.getJSONArray("available_days");
-				List<String> availableList = new ArrayList<>();
-				for (int k = 0; k < availableDays.length(); k++) {
-			availableList.add(availableDays.getString(k));
-				}
-		%>
-		<section class="train-card fade-in" data-train-id="<%=trainId%>"
-			data-train-name="<%=trainName%>"
-			data-routes='<%=routes.toString().replace("'", "\\'")%>'>
-
-			<div class="train-header">
-				<div>
-					<h2><%=trainName%>
-						(<%=trainId%>)
-					</h2>
-					<p class="route"><%=source%>
-						➜
-						<%=destination%></p>
+		<nav class="navbar glass">
+			<div class="nav-brand">
+				<div class="logo-icon">
+					<i class="ri-train-fill"></i>
 				</div>
-				<button class="schedule-btn" data-train="<%=trainId%>">Train
-					Schedule</button>
+				<div class="brand-info">
+					<span class="brand-name">Sam Railways</span>
+				</div>
 			</div>
 
-			<!-- Week Days -->
-			<div class="day-strip">
+			<div class="nav-links">
+				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
+					Home</a> <a href="#" class="active"><i class="ri-train-line"></i>
+					Trains</a> <a href="pnrstatus.jsp"><i class="ri-qr-code-line"></i>
+					PNR Status</a> <a href="charts.jsp"><i
+					class="ri-bar-chart-horizontal-line"></i> Charts</a>
+			</div>
+
+			<div class="nav-actions">
+				<button id="themeToggle" class="btn-icon" aria-label="Toggle Theme">
+					<i class="ri-moon-clear-line"></i>
+				</button>
+
+				<div class="nav-item dropdown">
+					<button class="dropdown-trigger">
+						<i class="ri-user-3-line"></i> <span class="account-text">My
+							Account</span> <i class="ri-arrow-down-s-line arrow-icon"></i>
+					</button>
+
+					<div class="dropdown-menu glass">
+						<div class="menu-header">
+							<div class="user-avatar"><%=userName.toString().toUpperCase().charAt(0)%></div>
+							<div class="user-details">
+								<span class="u-name"><%=userName%></span> <span class="u-status">Logged
+									In <i class="ri-checkbox-circle-fill"></i>
+								</span>
+							</div>
+						</div>
+
+						<div class="menu-divider"></div>
+
+						<a href="profile.jsp" class="menu-item"> <i
+							class="ri-profile-line"></i> My Profile
+						</a> <a href="transactions.jsp" class="menu-item"> <i
+							class="ri-exchange-dollar-line"></i> My Transactions
+						</a> <a href="ticket_history.jsp" class="menu-item"> <i
+							class="ri-history-line"></i> Booked Ticket History
+						</a> <a href="refunds.jsp" class="menu-item"> <i
+							class="ri-refund-2-line"></i> Ticket Refund History
+						</a>
+
+						<div class="menu-divider"></div>
+
+						<a href="logout" class="menu-item danger"> <i
+							class="ri-logout-box-r-line"></i> Logout
+						</a>
+					</div>
+				</div>
+			</div>
+		</nav>
+
+		<main class="main-content">
+
+			<div class="modify-container glass">
+				<form id="modifySearchForm" action="SearchServlet" method="get"
+					class="modify-form">
+					<div class="route-group">
+						<div class="input-mini">
+							<label>From</label> <input type="text" name="fromStation"
+								id="searchFrom" value="<%=source%>">
+						</div>
+						<button type="button" id="swapBtn" class="swap-mini">
+							<i class="ri-arrow-left-right-line"></i>
+						</button>
+						<div class="input-mini">
+							<label>To</label> <input type="text" name="toStation"
+								id="searchTo" value="<%=destination%>">
+						</div>
+					</div>
+					<div class="input-mini">
+						<label>Date</label> <input type="date" name="travelDate"
+							id="searchDate" value="<%=travelDate%>" min="<%=todayFormatted%>"
+							max="<%=maxDateFormatted%>">
+					</div>
+					<div class="input-mini">
+						<label>Class</label> <select name="trainClass" id="searchClass">
+							<option>All Classes</option>
+							<option>AC 3 Tier (3A)</option>
+							<option>AC 2 Tier (2A)</option>
+							<option>Sleeper (SL)</option>
+							<option>Chair Car (CC)</option>
+							<option>Second Sitting (2S)</option>
+						</select>
+					</div>
+					<div class="input-mini">
+						<label>Quota</label> <select name="quota">
+							<option>General</option>
+							<option>Ladies</option>
+							<option>Tatkal</option>
+							<option>Senior Citizen</option>
+						</select>
+					</div>
+					<button type="submit" class="btn btn-primary btn-search">Modify</button>
+				</form>
+			</div>
+
+			<div class="date-nav-wrapper">
+				<div class="date-nav">
+					<button id="prevDay" class="nav-btn">
+						<i class="ri-arrow-left-s-line"></i> Prev Day
+					</button>
+					<button id="nextDay" class="nav-btn">
+						Next Day <i class="ri-arrow-right-s-line"></i>
+					</button>
+				</div>
+			</div>
+
+			<h1 class="page-title">Available Trains</h1>
+
+			<div class="train-list">
 				<%
-				String[] shortDays = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-				String[] fullDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-				for (int d = 0; d < 7; d++) {
-					boolean available = availableList.contains(fullDays[d]);
+				if (matchedTrains != null && matchedTrains.length() > 0) {
+					for (int i = 0; i < matchedTrains.length(); i++) {
+						JSONObject train = matchedTrains.getJSONObject(i);
+						String trainId = train.getString("train_id");
+						String trainName = trainData.get(trainId);
+						JSONObject farePerKm = train.getJSONObject("fare_per_km");
+						JSONArray routes = train.getJSONArray("routes");
+
+						double srcDist = 0, destDist = 0;
+						String depTime = "--:--", arrTime = "--:--";
+						for (int j = 0; j < routes.length(); j++) {
+					JSONObject stop = routes.getJSONObject(j);
+					if (stop.getString("station").equalsIgnoreCase(source)) {
+						srcDist = stop.getDouble("distance_from_start");
+						depTime = stop.getString("departure");
+					}
+					if (stop.getString("station").equalsIgnoreCase(destination)) {
+						destDist = stop.getDouble("distance_from_start");
+						arrTime = stop.getString("arrival");
+					}
+						}
+						double totalDistance = Math.abs(destDist - srcDist);
+
+						JSONArray availableDays = train.getJSONArray("available_days");
+						List<String> availableList = new ArrayList<>();
+						for (int k = 0; k < availableDays.length(); k++)
+					availableList.add(availableDays.getString(k));
 				%>
-				<span class="day-pill <%=available ? "" : "disabled"%>"><%=shortDays[d]%></span>
+				<section class="train-card" data-train-id="<%=trainId%>"
+					data-train-name="<%=trainName%>"
+					data-routes='<%=routes.toString().replace("'", "\\'")%>'>
+					<div class="card-top">
+						<div class="train-info">
+							<div class="train-header-row">
+								<h2><%=trainName%></h2>
+								<span class="train-number">#<%=trainId%></span>
+							</div>
+							<div class="train-times">
+								<span class="time"><%=depTime%></span> <span class="arrow"><i
+									class="ri-arrow-right-line"></i></span> <span class="time"><%=arrTime%></span>
+								<span class="duration"><%=(int) totalDistance%> km</span>
+							</div>
+						</div>
+						<button class="btn-outline schedule-btn" data-train="<%=trainId%>">
+							<i class="ri-map-2-line"></i> Schedule
+						</button>
+					</div>
+
+					<div class="days-row">
+						<span>Runs On:</span>
+						<div class="day-pills">
+							<%
+							String[] shortDays = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+							String[] fullDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+							for (int d = 0; d < 7; d++) {
+								boolean available = availableList.contains(fullDays[d]);
+							%>
+							<span class="day-badge <%=available ? "active" : ""%>"><%=shortDays[d].charAt(0)%></span>
+							<%
+							}
+							%>
+						</div>
+					</div>
+
+					<div class="coach-grid">
+						<%
+						Iterator<String> it = farePerKm.keys();
+						while (it.hasNext()) {
+							String coach = it.next();
+							if (!seatAvailability.has(trainId) || !seatAvailability.getJSONObject(trainId).has(coach))
+								continue;
+						%>
+						<button class="coach-btn" data-train="<%=trainId%>"
+							data-class="<%=coach%>" data-distance="<%=totalDistance%>">
+							<span class="coach-name"><%=coach%></span> <span class="tap-text">Check</span>
+						</button>
+						<%
+						}
+						%>
+					</div>
+
+					<div class="details-panel hidden" id="details-<%=trainId%>">
+						<div class="details-content"></div>
+						<div class="action-row">
+							<button class="btn btn-primary book-now"
+								data-train="<%=trainId%>" disabled>Book Now</button>
+						</div>
+					</div>
+				</section>
+				<%
+				}
+				} else {
+				%>
+				<div class="no-results glass">
+					<i class="ri-train-line"></i>
+					<h3>No trains found</h3>
+					<p>Try changing dates or stations.</p>
+				</div>
 				<%
 				}
 				%>
 			</div>
+		</main>
+	</div>
 
-			<!-- Coach Buttons -->
-			<div class="coach-buttons">
-				<%
-				Iterator<String> it = farePerKm.keys();
-				while (it.hasNext()) {
-					String coach = it.next();
-					 // Hide button if class not in availability
-				    if (!seatAvailability.has(trainId) ||
-				        !seatAvailability.getJSONObject(trainId).has(coach)) {
-				        continue;  // Skip this coach
-				    }
-				%>
-				<button class="coach-btn" data-train="<%=trainId%>"
-					data-class="<%=coach%>" data-distance="<%=totalDistance%>"><%=coach%></button>
-				<%
-				}
-				%>
+	<div id="scheduleModal" class="modal-overlay hidden">
+		<div class="modal-card">
+			<div class="modal-header">
+				<h2 id="scheduleTrainName">Schedule</h2>
+				<button class="close-btn">
+					<i class="ri-close-line"></i>
+				</button>
 			</div>
-
-			<div class="coach-details hidden" id="details-<%=trainId%>">
-				<p>Select a coach class to view availability and fare details.</p>
+			<div class="modal-body">
+				<table class="schedule-table">
+					<thead>
+						<tr>
+							<th>Station</th>
+							<th>Arr</th>
+							<th>Dep</th>
+							<th>Km</th>
+						</tr>
+					</thead>
+					<tbody id="scheduleTableBody"></tbody>
+				</table>
 			</div>
-
-			<div class="book-row">
-				<button class="btn ghost other-dates" data-train="<%=trainId%>">Other
-					Dates</button>
-				<button class="btn book-now" data-train="<%=trainId%>" disabled>Book
-					Now</button>
-			</div>
-		</section>
-
-		<%
-		}
-		} else {
-		%>
-		<p class="no-trains">No trains found for your search.</p>
-		<%
-		}
-		%>
-	</main>
-
-	<!-- Modal -->
-	<div id="scheduleModal" class="modal hidden">
-		<div class="modal-content">
-			<span class="close-btn">×</span>
-			<h2 id="scheduleTrainName"></h2>
-			<table id="scheduleTable">
-				<thead>
-					<tr>
-						<th>Station Name</th>
-						<th>Arrival</th>
-						<th>Departure</th>
-						<th>Distance (km)</th>
-					</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
 		</div>
 	</div>
 
@@ -244,14 +315,13 @@
 				.parse(
 	<%=JSONObject.quote(seatAvailability.toString())%>
 		);
-		// ---- Safe fareMap ----
 		const fareMap = JSON
 				.parse(
 	<%JSONObject safeFare = new JSONObject();
 if (matchedTrains != null) {
 	for (int i = 0; i < matchedTrains.length(); i++) {
-		JSONObject train = matchedTrains.getJSONObject(i);
-		safeFare.put(train.getString("train_id"), train.getJSONObject("fare_per_km"));
+		JSONObject t = matchedTrains.getJSONObject(i);
+		safeFare.put(t.getString("train_id"), t.getJSONObject("fare_per_km"));
 	}
 }
 out.print(JSONObject.quote(safeFare.toString()));%>

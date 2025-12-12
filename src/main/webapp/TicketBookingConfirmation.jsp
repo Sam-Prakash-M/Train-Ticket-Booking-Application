@@ -1,157 +1,189 @@
-
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>Booking Confirmed | Sam Railways</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ticket Confirmation</title>
-<link rel="stylesheet" href="TicketBookingConfirmation.css?v=5">
+
+<link
+	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
+	rel="stylesheet" />
+<link rel="stylesheet" href="TicketBookingConfirmation.css?v=2025">
+
+<script>
+	const savedTheme = localStorage.getItem('sam_theme') || 'light';
+	if (savedTheme === 'dark')
+		document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+<script defer src="TicketBookingConfirmation.js?v=2025"></script>
 </head>
 <body>
-	<div class="container">
-		<!-- Error Card -->
-		<c:if test="${not empty errorMessage}">
-			<div class="card error-card" role="alert">
-				<div class="card-body">
+
+	<div class="app-container">
+
+		<nav class="navbar glass no-print">
+			<div class="nav-brand">
+				<div class="logo-box">
+					<i class="ri-train-fill"></i>
+				</div>
+				<span class="brand-text">Sam Railways</span>
+			</div>
+			<div class="nav-menu">
+				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
+					Home</a> <a href="MyBookings"><i class="ri-ticket-2-line"></i>
+					Bookings</a>
+			</div>
+			<div class="nav-profile">
+				<button id="themeToggle" class="icon-btn">
+					<i class="ri-moon-line"></i>
+				</button>
+				<div class="user-dropdown">
+					<button class="user-btn">
+						<span class="u-avatar"><%=session.getAttribute("user_name").toString().charAt(0)%></span>
+						<span class="u-name">My Account</span> <i
+							class="ri-arrow-down-s-line"></i>
+					</button>
+					<div class="dropdown-content glass">
+						<a href="profile.jsp"><i class="ri-user-line"></i> Profile</a> <a
+							href="logout" class="danger"><i class="ri-logout-box-line"></i>
+							Logout</a>
+					</div>
+				</div>
+			</div>
+		</nav>
+
+		<main class="main-content">
+
+			<c:if test="${not empty errorMessage}">
+				<div class="card error-card glass">
+					<div class="icon-box error">
+						<i class="ri-close-circle-fill"></i>
+					</div>
 					<h2>Booking Failed</h2>
 					<p>${errorMessage}</p>
 					<div class="actions">
-						<a href="BookingPage.jsp" class="btn">Try Again</a> <a
-							href="index.jsp" class="btn btn-ghost">Home</a>
+						<a href="RailwayApplication.jsp" class="btn primary">Try Again</a>
 					</div>
 				</div>
-			</div>
-		</c:if>
+			</c:if>
 
-		<!-- Success Card -->
-		<c:if test="${not empty ConfirmedTicket}">
-			<div class="card success-card">
-				<div class="card-header">
-					<div>
-						<h1>Booking Confirmed</h1>
-						<p class="muted">Your ticket has been successfully booked.</p>
+			<c:if test="${not empty ConfirmedTicket}">
+				<div class="ticket-wrapper">
+
+					<div class="success-banner glass no-print">
+						<div class="banner-content">
+							<div class="check-icon">
+								<i class="ri-check-line"></i>
+							</div>
+							<div>
+								<h1>Booking Confirmed!</h1>
+								<p>Your ticket has been sent to your email.</p>
+							</div>
+						</div>
+						<div class="banner-actions">
+							<button class="btn outline" id="printBtn">
+								<i class="ri-printer-line"></i> Print
+							</button>
+							<button class="btn primary"
+								onclick="window.location.href='RailwayApplication.jsp'">Book
+								Another</button>
+						</div>
 					</div>
-					<div class="actions">
-						<button
-							onclick="window.open('PrintTicket?pnr=${ConfirmedTicket.pnrNumber}', '_blank')"
-							id="printBtn" class="btn">Print Ticket</button>
 
-						<button id="copyPnrBtn" class="btn btn-outline">Copy PNR</button>
-					</div>
-				</div>
+					<div class="ticket-card glass" id="printableTicket">
 
-				<div class="card-body">
-					<section class="ticket-meta">
-						<div class="meta">
-							<label>PNR</label>
-							<div id="pnrValue">${ConfirmedTicket.pnrNumber}</div>
+						<div class="ticket-header">
+							<div class="pnr-box">
+								<span class="label">PNR NUMBER</span> <span class="value"
+									id="pnrText">${ConfirmedTicket.pnrNumber}</span>
+								<button class="copy-icon no-print" id="copyPnr" title="Copy PNR">
+									<i class="ri-file-copy-line"></i>
+								</button>
+							</div>
+							<div class="train-info">
+								<h2>${ConfirmedTicket.trainName}</h2>
+								<span class="train-badge">${ConfirmedTicket.trainId}</span>
+							</div>
+							<div class="qr-placeholder">
+								<i class="ri-qr-code-line"></i>
+							</div>
 						</div>
-						<div class="meta">
-							<label>Transaction ID</label>
-							<div>${ConfirmedTicket.transactionId}</div>
-						</div>
-						<div class="meta">
-							<label>Train</label>
-							<div>${ConfirmedTicket.trainName}
-								(${ConfirmedTicket.trainId})</div>
-						</div>
-						<div class="meta">
-							<label>Class</label>
-							<div>${ConfirmedTicket.className}</div>
-						</div>
-					</section>
 
-					<section class="route">
-						<div>
-							<strong>From</strong>
-							<div>${ConfirmedTicket.sourceArr}</div>
-						</div>
-						<div class="arrow">→</div>
-						<div>
-							<strong>To</strong>
-							<div>${ConfirmedTicket.destinationArr}</div>
-						</div>
-					</section>
+						<div class="divider"></div>
 
-					<section class="passengers">
-						<h3>Passengers</h3>
-						<table>
-							<thead>
-								<tr>
-									<th>#</th>
-									<th>Name</th>
-									<th>Preference</th>
-									<th>Age</th>
-									<th>Gender</th>
-									<th>Status</th>
-									<th>Coach</th>
-									<th>Seat</th>
-								</tr>
-							</thead>
-							<tbody>
-								<c:forEach var="p"
-									items="${ConfirmedTicket.associatedPassenger}" varStatus="loop">
+						<div class="route-info">
+							<div class="station">
+								<span class="code">${ConfirmedTicket.sourceArr}</span> <span
+									class="lbl">Source</span>
+							</div>
+							<div class="path-line">
+								<span class="class-lbl">${ConfirmedTicket.className}</span>
+								<div class="line">
+									<i class="ri-train-line"></i>
+								</div>
+								<span class="date-lbl">Transaction:
+									${ConfirmedTicket.transactionId}</span>
+							</div>
+							<div class="station right">
+								<span class="code">${ConfirmedTicket.destinationArr}</span> <span
+									class="lbl">Destination</span>
+							</div>
+						</div>
+
+						<div class="passenger-section">
+							<h3>Passenger Details</h3>
+							<table class="p-table">
+								<thead>
 									<tr>
-										<td>${loop.index + 1}</td>
-										<td>${p.name}</td>
-										<td>${p.preference}</td>
-										<td>${p.age}</td>
-										<td>${p.gender}</td>
-
-										<!-- STATUS COLUMN -->
-										<td><c:choose>
-												<c:when test="${p.ticketStatus.startsWith('CNF')}">
-                                                    CNF (${p.preference})
-                                                </c:when>
-												<c:when test="${p.ticketStatus.startsWith('RAC')}">
-                                                    RAC (${p.ticketStatus})
-                                                </c:when>
-												<c:when test="${p.ticketStatus.startsWith('WL')}">
-                                                    WL (${p.ticketStatus})
-                                                </c:when>
-												<c:otherwise>--</c:otherwise>
-											</c:choose></td>
-
-										<!-- COACH COLUMN -->
-										<td><c:choose>
-												<c:when test="${p.ticketStatus.startsWith('CNF')}">
-                                                    ${p.seatMetaData.coachNo}
-                                                </c:when>
-												<c:otherwise>--</c:otherwise>
-											</c:choose></td>
-
-										<!-- SEAT COLUMN -->
-										<td><c:choose>
-												<c:when test="${p.ticketStatus.startsWith('CNF')}">
-                                                     ${p.ticketStatus}/${p.seatMetaData.seatNumber}
-                                                </c:when>
-												<c:when test="${p.ticketStatus.startsWith('RAC')}">
-                                                    ${p.ticketStatus}/${p.seatMetaData.seatNumber}
-                                                </c:when>
-												<c:when test="${p.ticketStatus.startsWith('WL')}">
-                                                    ${p.ticketStatus}/${p.seatMetaData.seatNumber}
-                                                </c:when>
-												<c:otherwise>--</c:otherwise>
-											</c:choose></td>
+										<th>#</th>
+										<th>Name</th>
+										<th>Age/Sex</th>
+										<th>Preference</th>
+										<th>Status</th>
+										<th>Coach/Seat</th>
 									</tr>
-								</c:forEach>
-							</tbody>
-						</table>
-					</section>
+								</thead>
+								<tbody>
+									<c:forEach var="p"
+										items="${ConfirmedTicket.associatedPassenger}"
+										varStatus="loop">
+										<tr>
+											<td>${loop.index + 1}</td>
+											<td><strong>${p.name}</strong></td>
+											<td>${p.age}/ ${p.gender}</td>
+											<td>${p.preference}</td>
 
-					<div class="cta-row">
-						<a href="MyBookings" class="btn btn-primary">View My
-							Bookings</a> <a href="index.jsp" class="btn btn-ghost">Back to
-							Home</a>
+											<td><span
+												class="status-badge ${p.ticketStatus.startsWith('CNF') ? 'cnf' : 'wl'}">
+													${p.ticketStatus.startsWith('CNF') ? 'CONFIRMED' : p.ticketStatus}
+											</span></td>
+
+											<td><c:choose>
+													<c:when test="${p.ticketStatus.startsWith('CNF')}">
+														<b>${p.seatMetaData.coachNo}</b> - ${p.seatMetaData.seatNumber}
+                                                    </c:when>
+													<c:otherwise>--</c:otherwise>
+												</c:choose></td>
+										</tr>
+									</c:forEach>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="ticket-footer">
+							<p>Wish you a happy journey • Sam Railways</p>
+						</div>
 					</div>
+
 				</div>
-			</div>
-		</c:if>
+			</c:if>
+
+		</main>
 	</div>
 
-	<script src="TicketBookingConfirmation.js?v=4"></script>
+	<div id="toast" class="toast"></div>
+
 </body>
 </html>
-

@@ -1,48 +1,55 @@
-function addRippleEffect(event) {
-    const btn = event.currentTarget;
-    const circle = document.createElement("span");
-    const diameter = Math.max(btn.clientWidth, btn.clientHeight);
-    const radius = diameter / 2;
+document.addEventListener("DOMContentLoaded", () => {
 
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${event.clientX - btn.offsetLeft - radius}px`;
-    circle.style.top = `${event.clientY - btn.offsetTop - radius}px`;
-    circle.classList.add("ripple");
+	// 1. Theme Logic
+	const toggle = document.getElementById("themeToggle");
+	if (toggle) {
+		toggle.addEventListener("click", () => {
+			const root = document.documentElement;
+			const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+			root.setAttribute("data-theme", next);
+			localStorage.setItem("sam_theme", next);
+		});
+	}
 
-    const ripple = btn.getElementsByClassName("ripple")[0];
-    if (ripple) ripple.remove();
+	// 2. Loader
+	setTimeout(() => {
+		const loader = document.getElementById("pageLoader");
+		if (loader) loader.style.display = "none";
+	}, 800);
 
-    btn.appendChild(circle);
-}
+	// 3. Payment Logic
+	window.postToServlet = (url, amount) => {
+		// Show loader again
+		const loader = document.getElementById("pageLoader");
+		if (loader) {
+			loader.querySelector("p").textContent = "Redirecting to Gateway...";
+			loader.style.display = "flex";
+		}
 
+		const form = document.createElement("form");
+		form.method = "POST";
+		form.action = url;
 
-function postToServlet(url, amount) {
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = url;
+		const input = document.createElement("input");
+		input.type = "hidden";
+		input.name = "amount";
+		input.value = amount;
 
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = "amount";
-    input.value = amount;
+		form.appendChild(input);
+		document.body.appendChild(form);
+		form.submit();
+	};
 
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-}
+	window.payWithRazorpay = (amount) => {
+		postToServlet("RazorPayPayment", amount);
+	};
 
-document.querySelectorAll(".gateway-btn").forEach(btn => {
-    btn.addEventListener("click", addRippleEffect);
+	window.payWithCashfree = (amount) => {
+		postToServlet("CashfreePaymentServlet", amount);
+	};
+
+	window.payWithPaypal = (amount) => {
+		postToServlet("PaypalServlet", amount);
+	};
+
 });
-
-function payWithRazorpay(amount) {
-      postToServlet("RazorPayPayment", amount);
-}
-
-function payWithCashfree(amount) {
-   postToServlet("CashfreePaymentServlet", amount);
-}
-
-function payWithPaypal(amount) {
-    postToServlet("PaypalServlet", amount);
-}

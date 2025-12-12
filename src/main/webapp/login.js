@@ -1,23 +1,50 @@
-// Hide loader after startup
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    document.getElementById("loader").classList.add("hidden");
-  }, 2000); // loader visible for 2 seconds
+document.addEventListener("DOMContentLoaded", () => {
+
+	// 1. Theme Logic
+	const toggle = document.getElementById("themeToggle");
+	const root = document.documentElement; // FIX: Define 'root' here so it's available globally
+
+	if (toggle) {
+		toggle.addEventListener("click", () => {
+			const current = root.getAttribute("data-theme") === "dark" ? "dark" : "light";
+			const next = current === "dark" ? "light" : "dark";
+
+			root.setAttribute("data-theme", next);
+			localStorage.setItem("sam_theme", next);
+			updateIcon(next);
+		});
+
+		// Init icon state on load
+		const saved = localStorage.getItem("sam_theme") || "light";
+		updateIcon(saved);
+	}
+
+	function updateIcon(theme) {
+		if (!toggle) return;
+		const i = toggle.querySelector("i");
+		if (i) i.className = theme === 'dark' ? 'ri-sun-line' : 'ri-moon-line';
+	}
+
+	// 2. Loader
+	setTimeout(() => {
+		const l = document.getElementById("pageLoader");
+		if (l) {
+			l.style.opacity = '0';
+			setTimeout(() => l.remove(), 500);
+		}
+	}, 1200);
+
+	// 3. Password Toggle
+	window.togglePassword = () => {
+		const input = document.getElementById("password");
+		const icon = document.getElementById("eyeIcon");
+		if (input.type === "password") {
+			input.type = "text";
+			icon.className = "ri-eye-line";
+		} else {
+			input.type = "password";
+			icon.className = "ri-eye-off-line";
+		}
+	};
+
 });
-
-// Theme toggle
-function toggleTheme() {
-  const body = document.body;
-  const icon = document.querySelector(".theme-toggle .icon");
-
-  if (body.classList.contains("dark-mode")) {
-    body.classList.replace("dark-mode", "light-mode");
-    icon.textContent = "☀️";
-  } else {
-    body.classList.replace("light-mode", "dark-mode");
-    icon.textContent = "🌙";
-  }
-}
-/**
- * 
- */
