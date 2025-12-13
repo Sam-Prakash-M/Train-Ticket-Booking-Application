@@ -1,31 +1,29 @@
-<%@ page contentType="text/html; charset=UTF-8"%>
+<%@ page isErrorPage="true"%>
+<%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%
 // Session Logic for Header
 String userName = (String) session.getAttribute("user_name");
 boolean isLoggedIn = (userName != null);
 String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase() : "U";
-
-// Payment Data
-String orderId = (String) request.getAttribute("order_id");
-String amount = String.valueOf(request.getAttribute("amount"));
-String keyId = (String) request.getAttribute("key");
 %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Processing Payment | Sam Railways</title>
+<title>Station Not Found | Sam Railways</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="razorpayCheckout.css?v=2025_HEADER">
+<link rel="stylesheet" href="error_404_page.css?v=2025_HEADER">
 
 <script>
-        const savedTheme = localStorage.getItem('sam_theme') || 'light';
-        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    </script>
+	const savedTheme = localStorage.getItem('sam_theme') || 'light';
+	if (savedTheme === 'dark')
+		document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+<script defer src="error_404_page.js?v=2025"></script>
 </head>
 <body>
 
@@ -40,11 +38,13 @@ String keyId = (String) request.getAttribute("key");
 				</div>
 				<span class="brand-text">Sam Railways</span>
 			</div>
+
 			<div class="nav-menu">
 				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
-					Home</a> <a href="#" class="active"><i
-					class="ri-secure-payment-line"></i> Payment</a>
+					Home</a> <a href="#"><i class="ri-customer-service-2-line"></i>
+					Support</a>
 			</div>
+
 			<div class="nav-profile">
 				<button id="themeToggle" class="icon-btn">
 					<i class="ri-moon-line"></i>
@@ -86,32 +86,32 @@ String keyId = (String) request.getAttribute("key");
 		</nav>
 
 		<main class="main-content">
-			<div class="process-card glass">
-				<div class="spinner-box">
-					<div class="spinner"></div>
-					<div class="logo-overlay">
-						<img
-							src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg"
-							alt="Razorpay">
+
+			<div class="error-card glass">
+				<div class="illustration">
+					<div class="error-code">404</div>
+					<div class="train-icon-big">
+						<i class="ri-train-wifi-line"></i>
 					</div>
 				</div>
-				<h2>Secure Payment Gateway</h2>
-				<p>Please wait, do not refresh or press back...</p>
-				<button id="retryBtn" class="retry-btn hidden"
-					onclick="location.reload()">Retry Payment</button>
+
+				<h1 class="error-title">Station Not Found</h1>
+				<p class="error-desc">Oops! The train seems to have gone off the
+					tracks. The page you are looking for doesn't exist or has been
+					moved.</p>
+
+				<div class="action-buttons">
+					<button onclick="history.back()" class="btn secondary">
+						<i class="ri-arrow-left-line"></i> Go Back
+					</button>
+					<a href="RailwayApplication.jsp" class="btn primary"> <i
+						class="ri-home-4-line"></i> Back to Home
+					</a>
+				</div>
 			</div>
+
 		</main>
-
 	</div>
-
-	<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-	<script src="razorpayCheckout.js?v=2025_HEADER"></script>
-
-	<script>
-        document.addEventListener("DOMContentLoaded", () => {
-            openRazorpayCheckout("<%=keyId%>", "<%=amount%>", "<%=orderId%>");
-        });
-    </script>
 
 </body>
 </html>

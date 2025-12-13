@@ -41,8 +41,8 @@ public class PaymentServlet extends HttpServlet {
 
         int numberOfPerson = names.length;
         System.out.println("Passenger Count : "+numberOfPerson);
-        System.out.println("Currency : "+request.getParameter("fare"));
-        double totalFare = Double.parseDouble(request.getParameter("fare")) * numberOfPerson;
+        System.out.println("Currency : "+request.getParameter("baseFare"));
+        double totalFare = Double.parseDouble(request.getParameter("baseFare")) * numberOfPerson;
         System.out.println("Servlet Total Fare : "+totalFare);
 
         // EXTRA CHARGES
