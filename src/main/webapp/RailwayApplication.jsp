@@ -1,70 +1,108 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%
 // Server-side login check
-Boolean loggedIn = (session.getAttribute("user_name") != null);
+String userName = (String) session.getAttribute("user_name");
+boolean loggedIn = (userName != null);
+String userInitial = loggedIn ? String.valueOf(userName.charAt(0)).toUpperCase() : "U";
+
+// Date Logic
+java.time.LocalDate today = java.time.LocalDate.now();
+java.time.LocalDate maxDate = today.plusDays(90);
 %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Sam Railways | Next Gen Booking</title>
+<title>Sam Railways | Next Gen Travel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f172a">
 
+<link rel="icon"
+	href="https://cdn-icons-png.flaticon.com/512/3256/3256036.png"
+	type="image/png">
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-
 <link rel="stylesheet"
 	href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="RailwayApplication.css?v=2025">
+<link rel="stylesheet" href="RailwayApplication.css?v=2025_ULTRA_FIX">
 
+<script>
+        const savedTheme = localStorage.getItem('sam_theme') || 'light';
+        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="RailwayApplication.js?v=2025" defer></script>
+<script src="RailwayApplication.js?v=2025_ULTRA_FIX" defer></script>
 </head>
 <body>
 
-	<div class="ambient-light"></div>
+	<div id="appLoader" class="loader-overlay">
+		<div class="loader-track">
+			<div class="train-head">
+				<i class="ri-train-fill"></i>
+				<div class="light-beam"></div>
+			</div>
+			<div class="track-lines"></div>
+		</div>
+		<h2 class="loader-text">
+			Sam Railways <span class="dot">.</span><span class="dot">.</span><span
+				class="dot">.</span>
+		</h2>
+	</div>
+
+	<div class="ambient-glow"></div>
+	<div class="grid-mesh"></div>
 
 	<div class="app-container">
 
-		<nav class="navbar glass">
+		<nav class="navbar" id="mainNav">
 			<div class="nav-brand">
-				<div class="logo-icon">
+				<div class="brand-logo">
 					<i class="ri-train-fill"></i>
 				</div>
-				<div class="brand-info">
-					<span class="brand-name">Sam Railways</span> <span
-						class="brand-tag">Est. 2025</span>
-				</div>
+				<span class="brand-text">Sam Railways</span>
 			</div>
 
-			<div class="nav-links">
-				<a href="RailwayApplication.jsp" class="active"><i
-					class="ri-home-5-line"></i> Home</a> <a href="trains.jsp"><i
-					class="ri-map-pin-time-line"></i> Trains</a> <a href="pnrstatus.jsp"><i
-					class="ri-ticket-line"></i> PNR Status</a> <a href="charts.jsp"><i
-					class="ri-bar-chart-grouped-line"></i> Charts</a>
+			<div class="nav-links desktop-only">
+				<a href="#" class="active">Home</a> <a href="trains.jsp">Trains</a>
+				<a href="pnrstatus.jsp">PNR Status</a> <a href="charts.jsp">Charts</a>
 			</div>
 
-			<div class="nav-actions">
-				<button id="themeToggle" class="btn-icon" aria-label="Toggle Theme">
+			<div class="nav-right">
+				<button id="themeToggle" class="icon-btn">
 					<i class="ri-moon-clear-line"></i>
 				</button>
 
 				<%
 				if (!loggedIn) {
 				%>
-				<a href="login.jsp" class="btn btn-ghost">Log In</a> <a
-					href="register.jsp" class="btn btn-primary">Sign Up</a>
+				<a href="login.jsp" class="btn btn-login">Login</a> <a
+					href="register.jsp" class="btn btn-signup">Sign Up</a>
 				<%
 				} else {
 				%>
-				<div class="user-pill">
-					<i class="ri-user-smile-line"></i> <span><%=session.getAttribute("user_name")%></span>
+				<div class="user-menu-wrap">
+					<button class="user-pill">
+						<span class="avatar"><%=userInitial%></span> <span class="name"><%=userName%></span>
+						<i class="ri-arrow-down-s-line"></i>
+					</button>
+					<div class="dropdown-menu glass">
+						<div class="dd-header">
+							<strong><%=userName%></strong> <small>Logged In <i
+								class="ri-checkbox-circle-fill success-icon"></i></small>
+						</div>
+						<div class="divider"></div>
+						<a href="profile.jsp"><i class="ri-user-line"></i> My Profile</a>
+						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
+							My Transactions</a> <a href="MyBookings"><i
+							class="ri-history-line"></i> Booked Ticket History</a> <a
+							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket
+							Refund History</a>
+						<div class="divider"></div>
+						<a href="logout" class="danger"><i class="ri-logout-box-line"></i>
+							Logout</a>
+					</div>
 				</div>
-				<a href="logout" class="btn btn-sm btn-danger"><i
-					class="ri-logout-box-r-line"></i></a>
 				<%
 				}
 				%>
@@ -73,146 +111,155 @@ Boolean loggedIn = (session.getAttribute("user_name") != null);
 
 		<main class="main-content">
 
-			<section class="hero">
-				<div class="hero-content">
-					<span class="badge">New Experience</span>
+			<section class="hero-section">
+				<div class="hero-text">
+					<div class="badge-pill">
+						<span class="pulse"></span> Live Booking Open
+					</div>
 					<h1>
-						Your Journey,<br>Reimagined.
+						Experience the <br>
+						<span class="gradient-text">Future of Travel</span>
 					</h1>
-					<p>Experience the fastest, most secure way to book train
-						tickets across the nation.</p>
+					<p>Seamless booking, live tracking, and instant PNR status.</p>
 				</div>
 			</section>
 
-			<section class="booking-wrapper">
-				<div class="booking-card glass">
-					<div class="card-header">
-						<h2>
-							<i class="ri-search-line"></i> Find Train
-						</h2>
-					</div>
+			<div class="search-widget glass">
+				<form id="searchForm"
+					action="<%=loggedIn ? "SearchServlet" : "login.jsp"%>"
+					method="GET">
 
-					<form id="searchForm" class="booking-form" method="GET"
-						data-action="<%=loggedIn ? "searchtrains" : "login.jsp"%>">
-
-						<div class="form-grid">
-							<div class="route-group">
-								<div class="input-wrap">
-									<i class="ri-map-pin-line icon"></i> <input id="fromStation"
-										name="from" type="text" placeholder="From Station" required
-										autocomplete="off"> <label>Source</label>
-								</div>
-
-								<button type="button" id="swapStations" class="swap-btn"
-									aria-label="Swap Stations">
-									<i class="ri-arrow-left-right-line"></i>
-								</button>
-
-								<div class="input-wrap">
-									<i class="ri-map-pin-range-line icon"></i> <input
-										id="toStation" name="to" type="text" placeholder="To Station"
-										required autocomplete="off"> <label>Destination</label>
-								</div>
-							</div>
-
-							<div class="prefs-group">
-								<div class="input-wrap">
-									<i class="ri-calendar-event-line icon"></i> <input
-										id="journeyDate" type="text" name="date"
-										placeholder="Select Date" required> <label>Date</label>
-								</div>
-
-								<div class="input-wrap">
-									<i class="ri-armchair-line icon"></i> <select name="class">
-										<option value="ALL">All Classes</option>
-										<option value="3A">AC 3 Tier (3A)</option>
-										<option value="2A">AC 2 Tier (2A)</option>
-										<option value="SL">Sleeper (SL)</option>
-										<option value="CC">Chair Car (CC)</option>
-										<option value="2S">Second Sitting (2S)</option>
-									</select> <label>Class</label>
-								</div>
-
-								<div class="input-wrap">
-									<i class="ri-vip-crown-line icon"></i> <select name="quota">
-										<option value="GENERAL">General</option>
-										<option value="TATKAL">Tatkal</option>
-										<option value="LADIES">Ladies</option>
-										<option value="SENIOR CITIZEN">Senior Citizen</option>
-									</select> <label>Quota</label>
-								</div>
+					<div class="search-grid">
+						<div class="input-group">
+							<label>From</label>
+							<div class="field">
+								<i class="ri-map-pin-line"></i> <input type="text"
+									name="fromStation" id="fromStation" placeholder="Origin"
+									required autocomplete="off">
 							</div>
 						</div>
 
-						<div class="form-actions">
-							<button id="searchBtn" type="submit"
-								class="btn btn-primary btn-lg btn-glow">
-								Search Trains <i class="ri-arrow-right-line"></i>
-							</button>
-						</div>
-					</form>
+						<button type="button" id="swapBtn" class="swap-btn">
+							<i class="ri-arrow-left-right-line"></i>
+						</button>
 
-					<div id="authNotice" class="auth-notice hidden">
-						<div class="notice-content">
-							<i class="ri-lock-2-line"></i> <span>Authentication
-								required to proceed.</span>
+						<div class="input-group">
+							<label>To</label>
+							<div class="field">
+								<i class="ri-map-pin-range-line"></i> <input type="text"
+									name="toStation" id="toStation" placeholder="Destination"
+									required autocomplete="off">
+							</div>
 						</div>
-						<button id="goLogin" class="btn btn-sm btn-light">Login
-							Now</button>
+
+						<div class="input-group">
+							<label>Date</label>
+							<div class="field">
+								<i class="ri-calendar-line"></i> <input type="text"
+									name="travelDate" id="travelDate" placeholder="Select Date"
+									required>
+							</div>
+						</div>
+
+						<div class="input-group">
+							<label>Class</label>
+							<div class="field select-field">
+								<i class="ri-armchair-line"></i> <select name="trainClass">
+									<option value="ALL">All Classes</option>
+									<option value="SL">Sleeper (SL)</option>
+									<option value="3A">AC 3 Tier (3A)</option>
+									<option value="2A">AC 2 Tier (2A)</option>
+									<option value="1A">AC First Class (1A)</option>
+									<option value="CC">Chair Car (CC)</option>
+								</select> <i class="ri-arrow-down-s-line arrow-icon"></i>
+							</div>
+						</div>
 					</div>
-				</div>
-			</section>
 
-			<section class="features-grid">
-				<div class="bento-box feature-pnr">
-					<i class="ri-qr-code-line big-icon"></i>
-					<h3>PNR Status</h3>
-					<p>Check real-time status</p>
+					<div class="search-footer">
+						<div class="quota-options">
+							<label class="radio-pill"><input type="radio"
+								name="quota" value="GN" checked> <span>General</span></label> <label
+								class="radio-pill"><input type="radio" name="quota"
+								value="TQ"> <span>Tatkal</span></label> <label
+								class="radio-pill"><input type="radio" name="quota"
+								value="LD"> <span>Ladies</span></label><label
+								class="radio-pill"><input type="radio" name="quota"
+								value="SS"> <span>Senior Citizen</span></label>
+								
+						</div>
+						<button type="submit" class="btn-search-glow">
+							Search Trains <i class="ri-arrow-right-line"></i>
+						</button>
+					</div>
+
+				</form>
+			</div>
+
+			<section class="features">
+				<div class="feature-card">
+					<div class="icon-box blue">
+						<i class="ri-train-wifi-line"></i>
+					</div>
+					<h3>Live Status</h3>
+					<p>Track your train in real-time with precision GPS.</p>
 				</div>
-				<div class="bento-box feature-chart">
-					<i class="ri-file-list-3-line big-icon"></i>
-					<h3>Charts & Vacancy</h3>
-					<p>View seat availability</p>
+				<div class="feature-card">
+					<div class="icon-box purple">
+						<i class="ri-coupon-3-line"></i>
+					</div>
+					<h3>Best Offers</h3>
+					<p>Get exclusive discounts on your first booking.</p>
 				</div>
-				<div class="bento-box feature-track">
-					<i class="ri-map-2-line big-icon"></i>
-					<h3>Live Tracking</h3>
-					<p>Where is my train?</p>
-				</div>
-				<div class="bento-box feature-support">
-					<i class="ri-customer-service-2-line big-icon"></i>
+				<div class="feature-card">
+					<div class="icon-box orange">
+						<i class="ri-customer-service-2-line"></i>
+					</div>
 					<h3>24/7 Support</h3>
+					<p>We are here to help you anytime, anywhere.</p>
 				</div>
 			</section>
 
 		</main>
 
 		<footer class="footer">
-			<div class="footer-content">
-				<p>
-					&copy; <span id="year"></span> Sam Railways. Built for the future.
-				</p>
-				<div class="footer-links">
-					<a href="#">Privacy</a> <a href="#">Terms</a>
-				</div>
-			</div>
-		</footer>
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand-logo small"><i class="ri-train-fill"></i></div>
+                    <span class="brand-text">Sam Railways</span>
+                    <p class="brand-tagline">Redefining the journey since 2025.</p>
+                </div>
 
-	</div>
+                <div class="footer-links">
+                    <a href="#">About Us</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Support</a>
+                </div>
 
-	<div id="toast" class="toast hidden">
-		<i class="ri-notification-3-line"></i> <span id="toastMsg">Notification</span>
+                <div class="footer-social">
+                    <a href="#" class="social-icon"><i class="ri-twitter-x-line"></i></a>
+                    <a href="#" class="social-icon"><i class="ri-linkedin-fill"></i></a>
+                    <a href="#" class="social-icon"><i class="ri-instagram-line"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Sam Railways Inc. All rights reserved.</p>
+                <p>Made with <i class="ri-heart-fill" style="color: #ef4444;"></i> for Travelers</p>
+            </div>
+        </footer>
+
 	</div>
 
 	<script>
-		// Inline config passed to external JS
-		window.__APP = {
-			loggedIn :
-	<%=loggedIn ? "true" : "false"%>
-		,
-			loginUrl : "login.jsp",
-			searchAction : "searchtrains"
+        window.__CONFIG = {
+            loggedIn: <%=loggedIn%>,
+            minDate: "<%=today%>",
+            maxDate: "<%=maxDate%>
+		"
 		};
 	</script>
+
 </body>
 </html>

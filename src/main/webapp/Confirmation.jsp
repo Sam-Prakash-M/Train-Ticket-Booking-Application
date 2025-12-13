@@ -1,4 +1,10 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
+<%
+// Session Logic for Header
+String userName = (String) session.getAttribute("user_name");
+boolean isLoggedIn = (userName != null);
+String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase() : "U";
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +15,14 @@
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="Confirmation.css?v=20">
+<link rel="stylesheet" href="Confirmation.css?v=2025_HEADER">
 
 <script>
-        const savedTheme = localStorage.getItem('sam_theme') || 'light';
-        if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        
-        window.CLASS_TYPE_RAW = "<%=request.getAttribute("classType") != null ? request.getAttribute("classType") : "SL"%>";
-        window.BASE_FARE = parseFloat("<%=request.getAttribute("fare") != null ? request.getAttribute("fare") : "0"%>");
+    const savedTheme = localStorage.getItem('sam_theme') || 'light';
+    if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    
+    window.CLASS_TYPE_RAW = "<%=request.getAttribute("classType") != null ? request.getAttribute("classType") : "SL"%>";
+    window.BASE_FARE = parseFloat("<%=request.getAttribute("fare") != null ? request.getAttribute("fare") : "0"%>");
 
 	function extractClassCode(str) {
 		if (!str)
@@ -26,7 +32,7 @@
 	}
 	window.TRAIN_CLASS_CODE = extractClassCode(window.CLASS_TYPE_RAW);
 </script>
-<script defer src="Confirmation.js?v=20"></script>
+<script defer src="Confirmation.js?v=2025_HEADER"></script>
 </head>
 <body>
 
@@ -46,28 +52,51 @@
 				</div>
 				<span class="brand-text">Sam Railways</span>
 			</div>
+
 			<div class="nav-menu">
 				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
 					Home</a> <a href="#" class="active"><i class="ri-file-list-3-line"></i>
-					Booking</a>
+					Booking</a> <a href="pnrstatus.jsp"><i class="ri-qr-code-line"></i>
+					PNR Status</a>
 			</div>
+
 			<div class="nav-profile">
 				<button id="themeToggle" class="icon-btn">
 					<i class="ri-moon-line"></i>
 				</button>
+
+				<%
+				if (isLoggedIn) {
+				%>
 				<div class="user-dropdown">
 					<button class="user-btn">
-						<span class="u-avatar"><%=session.getAttribute("user_name").toString().charAt(0)%></span>
-						<span class="u-name">My Account</span> <i
-							class="ri-arrow-down-s-line"></i>
+						<span class="u-avatar"><%=userInitial%></span> <span
+							class="u-name">My Account</span> <i class="ri-arrow-down-s-line"></i>
 					</button>
 					<div class="dropdown-content glass">
-						<a href="profile.jsp"><i class="ri-user-line"></i> Profile</a> <a
-							href="ticket_history.jsp"><i class="ri-history-line"></i>
-							Bookings</a> <a href="logout" class="danger"><i
-							class="ri-logout-box-line"></i> Logout</a>
+						<div class="dd-header">
+							<strong><%=userName%></strong> <small>Logged In <i
+								class="ri-checkbox-circle-fill success-icon"></i></small>
+						</div>
+						<div class="divider"></div>
+						<a href="profile.jsp"><i class="ri-user-line"></i> My Profile</a>
+						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
+							My Transactions</a> <a href="MyBookings"><i
+							class="ri-history-line"></i> Booked Ticket History</a> <a
+							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket
+							Refund History</a>
+						<div class="divider"></div>
+						<a href="logout" class="danger"><i class="ri-logout-box-line"></i>
+							Logout</a>
 					</div>
 				</div>
+				<%
+				} else {
+				%>
+				<a href="login.jsp" class="btn-login">Log In</a>
+				<%
+				}
+				%>
 			</div>
 		</nav>
 
@@ -180,8 +209,8 @@
 							</div>
 							<div class="route-line">
 								<div>
-									<span class="station-code"><%=request.getAttribute("source")%></span><span
-										class="s-time"><%=request.getAttribute("sourceDeparture")%></span>
+									<span class="station-code"><%=request.getAttribute("source")%></span>
+									<span class="s-time"><%=request.getAttribute("sourceDeparture")%></span>
 								</div>
 								<div class="arrow-line">
 									<span><%=request.getAttribute("classType")%></span>
@@ -189,13 +218,14 @@
 									<i class="ri-train-line"></i>
 								</div>
 								<div style="text-align: right;">
-									<span class="station-code"><%=request.getAttribute("destination")%></span><span
-										class="s-time"><%=request.getAttribute("destinationArrival")%></span>
+									<span class="station-code"><%=request.getAttribute("destination")%></span>
+									<span class="s-time"><%=request.getAttribute("destinationArrival")%></span>
 								</div>
 							</div>
 							<div class="date-row">
 								<i class="ri-calendar-event-line"></i>
-								<%=request.getAttribute("travelDate")%></div>
+								<%=request.getAttribute("travelDate")%>
+							</div>
 						</div>
 
 						<div class="divider"></div>

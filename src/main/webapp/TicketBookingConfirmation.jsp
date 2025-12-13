@@ -1,5 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%
+// Session Logic for Header
+String userName = (String) session.getAttribute("user_name");
+boolean isLoggedIn = (userName != null);
+String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase() : "U";
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,14 +16,15 @@
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="TicketBookingConfirmation.css?v=2025">
+<link rel="stylesheet"
+	href="TicketBookingConfirmation.css?v=2025_HEADER">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="TicketBookingConfirmation.js?v=2025"></script>
+<script defer src="TicketBookingConfirmation.js?v=2025_HEADER"></script>
 </head>
 <body>
 
@@ -30,27 +37,51 @@
 				</div>
 				<span class="brand-text">Sam Railways</span>
 			</div>
+
 			<div class="nav-menu">
 				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
 					Home</a> <a href="MyBookings"><i class="ri-ticket-2-line"></i>
-					Bookings</a>
+					Bookings</a> <a href="pnrstatus.jsp"><i class="ri-qr-code-line"></i>
+					PNR Status</a>
 			</div>
+
 			<div class="nav-profile">
 				<button id="themeToggle" class="icon-btn">
 					<i class="ri-moon-line"></i>
 				</button>
+
+				<%
+				if (isLoggedIn) {
+				%>
 				<div class="user-dropdown">
 					<button class="user-btn">
-						<span class="u-avatar"><%=session.getAttribute("user_name").toString().charAt(0)%></span>
-						<span class="u-name">My Account</span> <i
-							class="ri-arrow-down-s-line"></i>
+						<span class="u-avatar"><%=userInitial%></span> <span
+							class="u-name">My Account</span> <i class="ri-arrow-down-s-line"></i>
 					</button>
 					<div class="dropdown-content glass">
-						<a href="profile.jsp"><i class="ri-user-line"></i> Profile</a> <a
-							href="logout" class="danger"><i class="ri-logout-box-line"></i>
+						<div class="dd-header">
+							<strong><%=userName%></strong> <small>Logged In <i
+								class="ri-checkbox-circle-fill success-icon"></i></small>
+						</div>
+						<div class="divider"></div>
+						<a href="profile.jsp"><i class="ri-user-line"></i> My Profile</a>
+						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
+							My Transactions</a> <a href="MyBookings"><i
+							class="ri-history-line"></i> Booked Ticket History</a> <a
+							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket
+							Refund History</a>
+						<div class="divider"></div>
+						<a href="logout" class="danger"><i class="ri-logout-box-line"></i>
 							Logout</a>
 					</div>
 				</div>
+				<%
+				} else {
+				%>
+				<a href="login.jsp" class="btn-login">Log In</a>
+				<%
+				}
+				%>
 			</div>
 		</nav>
 
@@ -152,7 +183,7 @@
 										<tr>
 											<td>${loop.index + 1}</td>
 											<td><strong>${p.name}</strong></td>
-											<td>${p.age}/ ${p.gender}</td>
+											<td>${p.age}/${p.gender}</td>
 											<td>${p.preference}</td>
 
 											<td><span

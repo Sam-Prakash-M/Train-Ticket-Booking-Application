@@ -1,5 +1,10 @@
 <%@ page contentType="text/html;charset=UTF-8"%>
 <%
+// Session Logic for Header
+String userName = (String) session.getAttribute("user_name");
+boolean isLoggedIn = (userName != null);
+String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase() : "U";
+
 // Data Retrieval
 double totalFare = (Double) request.getAttribute("totalFare");
 double gst = (Double) request.getAttribute("gst");
@@ -10,11 +15,6 @@ String[] names = (String[]) request.getAttribute("names");
 String[] ages = (String[]) request.getAttribute("ages");
 String[] genders = (String[]) request.getAttribute("genders");
 String[] berths = (String[]) request.getAttribute("berths");
-
-// Session User for Header
-String userName = (String) session.getAttribute("user_name");
-if (userName == null)
-	userName = "Guest";
 %>
 
 <!DOCTYPE html>
@@ -27,7 +27,7 @@ if (userName == null)
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="payment.css?v=2025">
+<link rel="stylesheet" href="payment.css?v=2025_HEADER">
 
 <script>
 	// Theme Persistence
@@ -35,7 +35,7 @@ if (userName == null)
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="payment.js?v=2025"></script>
+<script defer src="payment.js?v=2025_HEADER"></script>
 </head>
 <body>
 
@@ -68,18 +68,39 @@ if (userName == null)
 				<button id="themeToggle" class="icon-btn">
 					<i class="ri-moon-line"></i>
 				</button>
+
+				<%
+				if (isLoggedIn) {
+				%>
 				<div class="user-dropdown">
 					<button class="user-btn">
-						<span class="u-avatar"><%=userName.charAt(0)%></span> <span
+						<span class="u-avatar"><%=userInitial%></span> <span
 							class="u-name">My Account</span> <i class="ri-arrow-down-s-line"></i>
 					</button>
 					<div class="dropdown-content glass">
-						<a href="profile.jsp"><i class="ri-user-line"></i> Profile</a> <a
-							href="ticket_history.jsp"><i class="ri-history-line"></i>
-							Bookings</a> <a href="logout" class="danger"><i
-							class="ri-logout-box-line"></i> Logout</a>
+						<div class="dd-header">
+							<strong><%=userName%></strong> <small>Logged In <i
+								class="ri-checkbox-circle-fill success-icon"></i></small>
+						</div>
+						<div class="divider"></div>
+						<a href="profile.jsp"><i class="ri-user-line"></i> My Profile</a>
+						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
+							My Transactions</a> <a href="MyBookings"><i
+							class="ri-history-line"></i> Booked Ticket History</a> <a
+							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket
+							Refund History</a>
+						<div class="divider"></div>
+						<a href="logout" class="danger"><i class="ri-logout-box-line"></i>
+							Logout</a>
 					</div>
 				</div>
+				<%
+				} else {
+				%>
+				<a href="login.jsp" class="btn-login">Log In</a>
+				<%
+				}
+				%>
 			</div>
 		</nav>
 

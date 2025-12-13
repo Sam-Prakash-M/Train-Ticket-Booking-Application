@@ -192,14 +192,15 @@ body {
 
 /* CARDS */
 .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    overflow: visible !important; /* IMPORTANT */
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 20px;
+	margin-bottom: 20px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	overflow: visible !important; /* IMPORTANT */
 }
+
 .card-header {
 	display: flex;
 	justify-content: space-between;
@@ -227,15 +228,16 @@ body {
 }
 
 .passenger-row {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
-    position: relative;
-    animation: slideDown 0.3s ease;
-    z-index: 10; /* Higher than add-btn */
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 15px;
+	margin-bottom: 15px;
+	position: relative;
+	animation: slideDown 0.3s ease;
+	z-index: 10; /* Higher than add-btn */
 }
+
 @keyframes slideDown {
 	from {opacity: 0;
 	transform: translateY(-10px);
@@ -333,21 +335,21 @@ to {
 
 /* Fix: Button sits below rows */
 .add-btn {
-    width: 100%;
-    padding: 12px;
-    background: var(--bg);
-    border: 1px dashed var(--primary);
-    color: var(--primary);
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: 0.2s;
-    position: relative;
-    z-index: 1; /* Lower than passenger row */
+	width: 100%;
+	padding: 12px;
+	background: var(--bg);
+	border: 1px dashed var(--primary);
+	color: var(--primary);
+	border-radius: 8px;
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	transition: 0.2s;
+	position: relative;
+	z-index: 1; /* Lower than passenger row */
 }
 
 .add-btn:hover {
@@ -514,82 +516,83 @@ to {
 }
 /* Summary Card Updates */
 .fare-row {
-    display: flex; 
-    justify-content: space-between; 
-    margin-bottom: 8px; 
-    font-size: 0.9rem; 
-    color: var(--muted);
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 8px;
+	font-size: 0.9rem;
+	color: var(--muted);
 }
 /* ... (Keep previous CSS) ... */
 
 /* PREFERENCES SECTION */
 .pref-content {
-    padding: 5px 0;
+	padding: 5px 0;
 }
 
 .checkbox-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    color: var(--text);
-    padding: 10px;
-    border-radius: 8px;
-    transition: background 0.2s;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	cursor: pointer;
+	font-size: 0.95rem;
+	color: var(--text);
+	padding: 10px;
+	border-radius: 8px;
+	transition: background 0.2s;
 }
 
 .checkbox-container:hover {
-    background: var(--input-bg);
+	background: var(--input-bg);
 }
 
 .checkbox-container input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--muted);
-    border-radius: 4px;
-    display: grid;
-    place-content: center;
-    transition: 0.2s;
-    cursor: pointer;
+	appearance: none;
+	-webkit-appearance: none;
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--muted);
+	border-radius: 4px;
+	display: grid;
+	place-content: center;
+	transition: 0.2s;
+	cursor: pointer;
 }
 
 .checkbox-container input[type="checkbox"]::before {
-    content: "\2713"; /* Checkmark symbol */
-    font-size: 14px;
-    color: white;
-    transform: scale(0);
-    transition: 0.2s;
-    font-weight: bold;
+	content: "\2713"; /* Checkmark symbol */
+	font-size: 14px;
+	color: white;
+	transform: scale(0);
+	transition: 0.2s;
+	font-weight: bold;
 }
 
 .checkbox-container input[type="checkbox"]:checked {
-    background-color: var(--primary);
-    border-color: var(--primary);
+	background-color: var(--primary);
+	border-color: var(--primary);
 }
 
 .checkbox-container input[type="checkbox"]:checked::before {
-    transform: scale(1);
+	transform: scale(1);
 }
 
 /* FARE BREAKDOWN UPDATES */
 .gst-row {
-    color: var(--text);
-    font-size: 0.85rem;
-    background: rgba(0,0,0,0.03);
-    padding: 6px 10px;
-    border-radius: 6px;
-    margin-top: 4px;
+	color: var(--text);
+	font-size: 0.85rem;
+	background: rgba(0, 0, 0, 0.03);
+	padding: 6px 10px;
+	border-radius: 6px;
+	margin-top: 4px;
 }
+
 .fare-total {
-    display: flex; 
-    justify-content: space-between; 
-    font-weight: 700; 
-    font-size: 1.2rem; 
-    color: var(--primary);
-    margin-top: 10px;
+	display: flex;
+	justify-content: space-between;
+	font-weight: 700;
+	font-size: 1.2rem;
+	color: var(--primary);
+	margin-top: 10px;
 }
 
 .action-buttons {
@@ -691,3 +694,190 @@ to {
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ... (Existing RESET & FONTS variables remain unchanged) ... */
+
+/* --------------------------
+   UPDATED NAVBAR & DROPDOWN
+--------------------------- */
+.navbar {
+	background: var(--card);
+	border-bottom: 1px solid var(--border);
+	padding: 0.8rem 2rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	position: sticky;
+	top: 0;
+	z-index: 50;
+}
+
+.nav-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-family: 'Poppins', sans-serif;
+}
+
+.logo-box {
+	color: var(--primary);
+	font-size: 1.5rem;
+}
+
+.brand-text {
+	font-weight: 700;
+	font-size: 1.2rem;
+}
+
+.nav-menu {
+	display: flex;
+	gap: 20px;
+}
+
+.nav-menu a {
+	text-decoration: none;
+	color: var(--text-muted);
+	margin: 0 15px;
+	font-weight: 500;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.nav-menu a.active {
+	color: var(--primary);
+}
+
+.nav-profile {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+}
+
+.icon-btn {
+	background: none;
+	border: none;
+	color: var(--muted);
+	font-size: 1.2rem;
+	cursor: pointer;
+}
+
+/* Dropdown Styles */
+.user-dropdown {
+	position: relative;
+}
+
+.user-btn {
+	background: var(--bg);
+	border: 1px solid var(--border);
+	padding: 6px 12px;
+	border-radius: 30px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--text);
+}
+
+.user-btn:hover {
+	border-color: var(--primary);
+}
+
+.u-avatar {
+	width: 28px;
+	height: 28px;
+	background: var(--primary);
+	color: white;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-size: 0.8rem;
+}
+
+.dropdown-content {
+	position: absolute;
+	top: 120%;
+	right: 0;
+	width: 240px;
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 8px;
+	box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(10px);
+	transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+	z-index: 100;
+}
+
+.user-dropdown:hover .dropdown-content {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+}
+
+.dd-header {
+	padding: 10px 12px;
+}
+
+.dd-header strong {
+	display: block;
+	font-size: 0.95rem;
+	color: var(--text);
+}
+
+.dd-header small {
+	color: var(--muted);
+	font-size: 0.75rem;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.success-icon {
+	color: #10b981;
+}
+
+.divider {
+	height: 1px;
+	background: var(--border);
+	margin: 6px 0;
+}
+
+.dropdown-content a {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	text-decoration: none;
+	color: var(--muted);
+	border-radius: 8px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	transition: 0.2s;
+}
+
+.dropdown-content a:hover {
+	background: var(--bg);
+	color: var(--text);
+}
+
+.dropdown-content a.danger:hover {
+	color: var(--danger);
+	background: #fef2f2;
+}
+
+/* Login Button (Guest) */
+.btn-login {
+	text-decoration: none;
+	color: white;
+	background: var(--primary);
+	padding: 8px 20px;
+	border-radius: 30px;
+	font-weight: 600;
+	font-size: 0.9rem;
+	box-shadow: 0 4px 10px var(--primary); /* Glow effect for primary */
+}
+
+/* ... (Rest of your existing CSS remains unchanged) ... */
