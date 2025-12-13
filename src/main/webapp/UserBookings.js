@@ -105,5 +105,24 @@ document.addEventListener("DOMContentLoaded", () => {
 		t.className = isError ? "toast show error" : "toast show";
 		setTimeout(() => t.className = "toast", 3000);
 	}
+	
+	// 5. Cancel Modal Logic
+	    const modal = document.getElementById("cancelModal");
+	    const pnrDisplay = document.getElementById("cancelPnrDisplay");
+	    const pnrInput = document.getElementById("cancelPnrInput");
+
+	    window.confirmCancel = (pnr) => {
+	        pnrDisplay.textContent = pnr;
+	        pnrInput.value = pnr;
+	        modal.classList.remove("hidden");
+	    };
+
+	    window.closeModal = () => {
+	        modal.classList.add("hidden");
+	    };
+
+	    window.addEventListener("click", (e) => {
+	        if (e.target === modal) closeModal();
+	    });
 
 });

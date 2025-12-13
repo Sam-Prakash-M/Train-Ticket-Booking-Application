@@ -150,6 +150,9 @@
 											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
 											<i class="ri-printer-line"></i> Print Ticket
 										</button>
+										<button class="btn-action danger" onclick="event.stopPropagation(); confirmCancel('${booking.pnrNo}')">
+                                            <i class="ri-close-circle-line"></i> Cancel Ticket
+                                        </button>
 									</div>
 								</div>
 							</div>
@@ -233,6 +236,9 @@
 											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
 											<i class="ri-printer-line"></i> Print Ticket
 										</button>
+										<button class="btn-action danger" onclick="event.stopPropagation(); confirmCancel('${booking.pnrNo}')">
+                                            <i class="ri-close-circle-line"></i> Cancel Ticket
+                                        </button>
 									</div>
 								</div>
 							</div>
@@ -316,6 +322,9 @@
 											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
 											<i class="ri-printer-line"></i> Print Ticket
 										</button>
+										<button class="btn-action danger" onclick="event.stopPropagation(); confirmCancel('${booking.pnrNo}')">
+                                            <i class="ri-close-circle-line"></i> Cancel Ticket
+                                        </button>
 									</div>
 								</div>
 							</div>
@@ -334,6 +343,21 @@
 
 		</main>
 	</div>
+	
+	<div id="cancelModal" class="modal-overlay hidden">
+        <div class="modal-box glass">
+            <div class="modal-icon"><i class="ri-alert-line"></i></div>
+            <h3>Cancel Ticket?</h3>
+            <p>Are you sure you want to cancel PNR <strong id="cancelPnrDisplay"></strong>? <br>This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn-modal cancel" onclick="closeModal()">Keep Ticket</button>
+                <form action="CancelTicketServlet" method="POST" id="cancelForm">
+                    <input type="hidden" name="pnr" id="cancelPnrInput">
+                    <button type="submit" class="btn-modal confirm">Yes, Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
 	<div id="toast" class="toast"></div>
 
