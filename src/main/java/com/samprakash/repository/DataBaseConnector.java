@@ -27,6 +27,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
+import com.samprakash.basemodel.Status;
 import com.samprakash.basemodel.TrainBookingDatabase;
 import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
@@ -897,7 +898,8 @@ public class DataBaseConnector {
 					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
 
 			FindIterable<Document> allBookingDocument = bookingStateCollection
-					.find(Filters.eq(BookingState.USER_NAME.name(), userName));
+					.find(Filters.and(Filters.eq(BookingState.USER_NAME.name(), userName),
+							Filters.eq(BookingState.BOOKING_STATUS.name(), Status.SUCCESS.name())));
 
 			for (Document eachBooking : allBookingDocument) {
 
