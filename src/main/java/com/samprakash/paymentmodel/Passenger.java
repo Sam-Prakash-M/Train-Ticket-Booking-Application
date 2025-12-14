@@ -2,7 +2,7 @@ package com.samprakash.paymentmodel;
 
 import com.samprakash.ticketbookmodel.SeatMetaData;
 
-public class Passenger {
+public class Passenger implements Comparable<Passenger> {
 
 	private String name;
 	private String preference;
@@ -92,6 +92,16 @@ public class Passenger {
 	public String toString() {
 		return "Passenger [name=" + name + ", preference=" + preference + ", age=" + age + ", gender=" + gender
 				+ ", nationalities=" + nationalities + ", seatMetaData=" + seatMetaData + "]";
+	}
+
+	@Override
+	public int compareTo(Passenger thatPassenger) {
+
+		if (this.ticketStatus == thatPassenger.ticketStatus) {
+
+			return Integer.compare(this.seatMetaData.seatNumber(), this.seatMetaData.seatNumber());
+		}
+		return this.ticketStatus.compareTo(thatPassenger.ticketStatus);
 	}
 
 }
