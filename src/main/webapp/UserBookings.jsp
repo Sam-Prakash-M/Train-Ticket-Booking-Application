@@ -11,14 +11,14 @@
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="UserBookings.css?v=2025_PNR">
+<link rel="stylesheet" href="UserBookings.css?v=31">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="UserBookings.js?v=2025_PNR"></script>
+<script defer src="UserBookings.js?v=31"></script>
 </head>
 <body>
 
@@ -31,19 +31,16 @@
 				</div>
 				<span class="brand-text">Sam Railways</span>
 			</div>
-
 			<div class="nav-menu">
 				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
 					Home</a> <a href="#" class="active"><i class="ri-ticket-2-line"></i>
 					Bookings</a> <a href="pnrstatus.jsp"><i class="ri-qr-code-line"></i>
 					PNR Status</a>
 			</div>
-
 			<div class="nav-profile">
 				<button id="themeToggle" class="icon-btn">
 					<i class="ri-moon-line"></i>
 				</button>
-
 				<div class="user-dropdown">
 					<button class="user-btn">
 						<span class="u-avatar"><%=session.getAttribute("user_name").toString().charAt(0)%></span>
@@ -73,269 +70,180 @@
 
 		<main class="main-content">
 
-			<h1 class="page-title">My Journey History</h1>
-
-			<div class="tabs-wrapper">
-				<div class="tabs glass">
-					<button class="tab active" onclick="showTab('all', this)">All</button>
-					<button class="tab" onclick="showTab('upcoming', this)">Upcoming</button>
+			<div class="header-row">
+				<h1 class="page-title">My Journeys</h1>
+				<div class="tabs glass-pill">
+					<button class="tab active" onclick="showTab('upcoming', this)">Upcoming</button>
 					<button class="tab" onclick="showTab('past', this)">Completed</button>
 				</div>
 			</div>
 
-			<div id="all" class="tab-content active">
+			<div id="upcoming" class="tab-content active">
 				<c:choose>
-					<c:when test="${not empty allBookings}">
-						<c:forEach var="booking" items="${allBookings}">
-							<div class="booking-card glass" id="card-${booking.pnrNo}"
+					<c:when test="${not empty upcomingBookings}">
+						<c:forEach var="booking" items="${upcomingBookings}">
+
+							<div class="booking-card glass-card" id="card-${booking.pnrNo}"
 								onclick="toggleDetails(this)">
 								<div class="card-summary">
 									<div class="train-info">
-										<h2>${booking.traiName}</h2>
-										<div class="route-row">
-											<span class="station">${booking.source}</span> <i
-												class="ri-arrow-right-line arrow"></i> <span class="station">${booking.destination}</span>
+										<div class="top-row">
+											<h2>${booking.traiName}</h2>
+											<span class="pnr-badge">PNR: ${booking.pnrNo}</span>
+										</div>
+										<div class="route-visual">
+											<div class="station-node">
+												<span class="code">${booking.source}</span><span class="lbl">Source</span>
+											</div>
+											<div class="path-line">
+												<i class="ri-train-line"></i>
+												<div class="dotted-line"></div>
+											</div>
+											<div class="station-node right">
+												<span class="code">${booking.destination}</span><span
+													class="lbl">Dest</span>
+											</div>
 										</div>
 										<div class="meta-row">
-											<span class="date"><i class="ri-calendar-line"></i>
-												${booking.travelDate}</span> <span class="class-badge">${booking.classType}</span>
+											<span class="date"><i class="ri-calendar-event-line"></i>
+												${booking.travelDate}</span> <span class="class-pill">${booking.classType}</span>
 										</div>
 									</div>
-									<div class="ticket-info">
-										<div class="pnr-box">
-											<small>PNR</small> <strong>${booking.pnrNo}</strong>
+									<div class="price-section">
+										<div class="price">₹${booking.totalFare}</div>
+										<div class="expand-btn">
+											<i class="ri-arrow-down-s-line"></i>
 										</div>
-										<div class="price-box">₹${booking.totalFare}</div>
-										<i class="ri-arrow-down-s-line expand-icon"></i>
 									</div>
 								</div>
 
 								<div class="card-details">
-									<h3>Passenger List</h3>
-									<div class="table-responsive">
-										<table class="passenger-table" id="table-${booking.pnrNo}">
-											<thead>
-												<tr>
-													<th>#</th>
-													<th>Name</th>
-													<th>Age/Sex</th>
-													<th>Coach/Seat</th>
-													<th>Status</th>
-												</tr>
-											</thead>
-											<tbody>
-												<c:forEach var="p" items="${booking.associatedPassenger}"
-													varStatus="loop">
-													<tr data-pname="${p.name}">
-														<td>${loop.index + 1}</td>
-														<td><strong>${p.name}</strong></td>
-														<td>${p.age}/ ${p.gender}</td>
-														<td>${p.seatMetaData.coachNo}-
-															${p.seatMetaData.seatNumber}</td>
-														<td><span
-															class="status-badge ${p.ticketStatus.startsWith('CNF') ? 'cnf' : (p.ticketStatus.startsWith('RAC') ? 'rac' : 'wl')}">
-																${p.ticketStatus} </span></td>
-													</tr>
-												</c:forEach>
-											</tbody>
-										</table>
+									<div class="passengers-list">
+										<c:forEach var="p" items="${booking.associatedPassenger}">
+											<div class="p-row" data-name="${p.name}"
+												data-status="${p.ticketStatus}">
+												<div class="p-icon">
+													<i class="ri-user-3-line"></i>
+												</div>
+												<div class="p-info">
+													<strong>${p.name}</strong><small>${p.age},
+														${p.gender}</small>
+												</div>
+												<div class="p-seat">
+													<span class="seat-badge">${p.seatMetaData.coachNo}
+														${p.seatMetaData.seatNumber != '0' ? '-' : ''}
+														${p.seatMetaData.seatNumber != '0' ? p.seatMetaData.seatNumber : ''}</span>
+												</div>
+												<div class="p-status">
+													<span
+														class="status-pill ${p.ticketStatus.startsWith('CNF') ? 'cnf' : (p.ticketStatus.startsWith('RAC') ? 'rac' : (p.ticketStatus.startsWith('CAN') ? 'can' : 'wl'))}">${p.ticketStatus}</span>
+												</div>
+											</div>
+										</c:forEach>
 									</div>
-									<div class="card-actions">
-										<button class="btn small secondary"
+
+									<div class="action-bar">
+										<button class="btn-action outline"
+											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
+											<i class="ri-printer-line"></i> Print
+										</button>
+										<button class="btn-action secondary"
 											onclick="event.stopPropagation(); getPNRStatus('${booking.pnrNo}', this)">
-											<i class="ri-refresh-line"></i> Get PNR Status
+											<i class="ri-refresh-line"></i> Status
 										</button>
 
-										<button class="btn small outline"
-											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
-											<i class="ri-printer-line"></i> Print Ticket
+										<button class="btn-action danger"
+											onclick="event.stopPropagation(); openCancelModal('${booking.pnrNo}')">
+											<i class="ri-close-circle-line"></i> Cancel Ticket
 										</button>
-										<button class="btn-action danger" onclick="event.stopPropagation(); confirmCancel('${booking.pnrNo}')">
-                                            <i class="ri-close-circle-line"></i> Cancel Ticket
-                                        </button>
 									</div>
 								</div>
 							</div>
+
 						</c:forEach>
 					</c:when>
 					<c:otherwise>
-						<div class="empty-state glass">
-							<i class="ri-ticket-line"></i>
-							<h3>No bookings found</h3>
-							<p>You haven't booked any tickets yet.</p>
-							<a href="RailwayApplication.jsp" class="btn primary">Book Now</a>
+						<div class="empty-state">
+							<i class="ri-ticket-line big-icon"></i>
+							<h3>No upcoming journeys</h3>
+							<a href="RailwayApplication.jsp" class="btn-primary">Book a
+								Ticket</a>
 						</div>
 					</c:otherwise>
 				</c:choose>
 			</div>
-				<!-- ================= PAST BOOKINGS ================= -->
+
 			<div id="past" class="tab-content">
 				<c:choose>
 					<c:when test="${not empty pastBookings}">
 						<c:forEach var="booking" items="${pastBookings}">
-							<div class="booking-card glass" id="card-${booking.pnrNo}"
+
+							<div class="booking-card glass-card" id="card-${booking.pnrNo}"
 								onclick="toggleDetails(this)">
 								<div class="card-summary">
 									<div class="train-info">
-										<h2>${booking.traiName}</h2>
-										<div class="route-row">
-											<span class="station">${booking.source}</span> <i
-												class="ri-arrow-right-line arrow"></i> <span class="station">${booking.destination}</span>
+										<div class="top-row">
+											<h2>${booking.traiName}</h2>
+											<span class="pnr-badge">PNR: ${booking.pnrNo}</span>
+										</div>
+										<div class="route-visual">
+											<div class="station-node">
+												<span class="code">${booking.source}</span>
+											</div>
+											<div class="path-line">
+												<i class="ri-check-double-line"></i>
+												<div class="dotted-line"></div>
+											</div>
+											<div class="station-node right">
+												<span class="code">${booking.destination}</span>
+											</div>
 										</div>
 										<div class="meta-row">
-											<span class="date"><i class="ri-calendar-line"></i>
-												${booking.travelDate}</span> <span class="class-badge">${booking.classType}</span>
+											<span class="date">${booking.travelDate}</span> <span
+												class="status-pill cnf">Completed</span>
 										</div>
 									</div>
-									<div class="ticket-info">
-										<div class="pnr-box">
-											<small>PNR</small> <strong>${booking.pnrNo}</strong>
+									<div class="price-section">
+										<div class="price">₹${booking.totalFare}</div>
+										<div class="expand-btn">
+											<i class="ri-arrow-down-s-line"></i>
 										</div>
-										<div class="price-box">₹${booking.totalFare}</div>
-										<i class="ri-arrow-down-s-line expand-icon"></i>
 									</div>
 								</div>
 
 								<div class="card-details">
-									<h3>Passenger List</h3>
-									<div class="table-responsive">
-										<table class="passenger-table" id="table-${booking.pnrNo}">
-											<thead>
-												<tr>
-													<th>#</th>
-													<th>Name</th>
-													<th>Age/Sex</th>
-													<th>Coach/Seat</th>
-													<th>Status</th>
-												</tr>
-											</thead>
-											<tbody>
-												<c:forEach var="p" items="${booking.associatedPassenger}"
-													varStatus="loop">
-													<tr data-pname="${p.name}">
-														<td>${loop.index + 1}</td>
-														<td><strong>${p.name}</strong></td>
-														<td>${p.age}/ ${p.gender}</td>
-														<td>${p.seatMetaData.coachNo}-
-															${p.seatMetaData.seatNumber}</td>
-														<td><span
-															class="status-badge ${p.ticketStatus.startsWith('CNF') ? 'cnf' : (p.ticketStatus.startsWith('RAC') ? 'rac' : 'wl')}">
-																${p.ticketStatus} </span></td>
-													</tr>
-												</c:forEach>
-											</tbody>
-										</table>
+									<div class="passengers-list">
+										<c:forEach var="p" items="${booking.associatedPassenger}">
+											<div class="p-row">
+												<div class="p-info">
+													<strong>${p.name}</strong>
+												</div>
+												<div class="p-status">
+													<span class="status-pill cnf">Completed</span>
+												</div>
+											</div>
+										</c:forEach>
 									</div>
-									<div class="card-actions">
-										<button class="btn small secondary"
-											onclick="event.stopPropagation(); getPNRStatus('${booking.pnrNo}', this)">
-											<i class="ri-refresh-line"></i> Get PNR Status
+
+									<div class="action-bar">
+										<button class="btn-action outline"
+											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
+											<i class="ri-printer-line"></i> Print Receipt
 										</button>
 
-										<button class="btn small outline"
-											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
-											<i class="ri-printer-line"></i> Print Ticket
+										<button class="btn-action primary"
+											onclick="event.stopPropagation(); rebookJourney('${booking.source}', '${booking.destination}')">
+											<i class="ri-repeat-line"></i> Rebook Journey
 										</button>
-										<button class="btn-action danger" onclick="event.stopPropagation(); confirmCancel('${booking.pnrNo}')">
-                                            <i class="ri-close-circle-line"></i> Cancel Ticket
-                                        </button>
 									</div>
 								</div>
 							</div>
+
 						</c:forEach>
 					</c:when>
 					<c:otherwise>
-						<div class="empty-state glass">
-							<i class="ri-ticket-line"></i>
-							<h3>No bookings found</h3>
-							<p>You haven't booked any tickets yet.</p>
-							<a href="RailwayApplication.jsp" class="btn primary">Book Now</a>
-						</div>
-					</c:otherwise>
-				</c:choose>
-			</div>
-				<!-- ================= UPCOMING BOOKINGS ================= -->
-			<div id="upcoming" class="tab-content">
-				<c:choose>
-					<c:when test="${not empty upcomingBookings}">
-						<c:forEach var="booking" items="${upcomingBookings}">
-							<div class="booking-card glass" id="card-${booking.pnrNo}"
-								onclick="toggleDetails(this)">
-								<div class="card-summary">
-									<div class="train-info">
-										<h2>${booking.traiName}</h2>
-										<div class="route-row">
-											<span class="station">${booking.source}</span> <i
-												class="ri-arrow-right-line arrow"></i> <span class="station">${booking.destination}</span>
-										</div>
-										<div class="meta-row">
-											<span class="date"><i class="ri-calendar-line"></i>
-												${booking.travelDate}</span> <span class="class-badge">${booking.classType}</span>
-										</div>
-									</div>
-									<div class="ticket-info">
-										<div class="pnr-box">
-											<small>PNR</small> <strong>${booking.pnrNo}</strong>
-										</div>
-										<div class="price-box">₹${booking.totalFare}</div>
-										<i class="ri-arrow-down-s-line expand-icon"></i>
-									</div>
-								</div>
-
-								<div class="card-details">
-									<h3>Passenger List</h3>
-									<div class="table-responsive">
-										<table class="passenger-table" id="table-${booking.pnrNo}">
-											<thead>
-												<tr>
-													<th>#</th>
-													<th>Name</th>
-													<th>Age/Sex</th>
-													<th>Coach/Seat</th>
-													<th>Status</th>
-												</tr>
-											</thead>
-											<tbody>
-												<c:forEach var="p" items="${booking.associatedPassenger}"
-													varStatus="loop">
-													<tr data-pname="${p.name}">
-														<td>${loop.index + 1}</td>
-														<td><strong>${p.name}</strong></td>
-														<td>${p.age}/ ${p.gender}</td>
-														<td>${p.seatMetaData.coachNo}-
-															${p.seatMetaData.seatNumber}</td>
-														<td><span
-															class="status-badge ${p.ticketStatus.startsWith('CNF') ? 'cnf' : (p.ticketStatus.startsWith('RAC') ? 'rac' : 'wl')}">
-																${p.ticketStatus} </span></td>
-													</tr>
-												</c:forEach>
-											</tbody>
-										</table>
-									</div>
-									<div class="card-actions">
-										<button class="btn small secondary"
-											onclick="event.stopPropagation(); getPNRStatus('${booking.pnrNo}', this)">
-											<i class="ri-refresh-line"></i> Get PNR Status
-										</button>
-
-										<button class="btn small outline"
-											onclick="event.stopPropagation(); window.open('PrintTicket?pnr=${booking.pnrNo}', '_blank')">
-											<i class="ri-printer-line"></i> Print Ticket
-										</button>
-										<button class="btn-action danger" onclick="event.stopPropagation(); confirmCancel('${booking.pnrNo}')">
-                                            <i class="ri-close-circle-line"></i> Cancel Ticket
-                                        </button>
-									</div>
-								</div>
-							</div>
-						</c:forEach>
-					</c:when>
-					<c:otherwise>
-						<div class="empty-state glass">
-							<i class="ri-ticket-line"></i>
-							<h3>No bookings found</h3>
-							<p>You haven't booked any tickets yet.</p>
-							<a href="RailwayApplication.jsp" class="btn primary">Book Now</a>
+						<div class="empty-state">
+							<h3>No travel history found</h3>
 						</div>
 					</c:otherwise>
 				</c:choose>
@@ -343,21 +251,38 @@
 
 		</main>
 	</div>
-	
+
 	<div id="cancelModal" class="modal-overlay hidden">
-        <div class="modal-box glass">
-            <div class="modal-icon"><i class="ri-alert-line"></i></div>
-            <h3>Cancel Ticket?</h3>
-            <p>Are you sure you want to cancel PNR <strong id="cancelPnrDisplay"></strong>? <br>This action cannot be undone.</p>
-            <div class="modal-actions">
-                <button class="btn-modal cancel" onclick="closeModal()">Keep Ticket</button>
-                <form action="CancelTicketServlet" method="POST" id="cancelForm">
-                    <input type="hidden" name="pnr" id="cancelPnrInput">
-                    <button type="submit" class="btn-modal confirm">Yes, Cancel</button>
-                </form>
-            </div>
-        </div>
-    </div>
+		<div class="modal-box glass">
+			<div class="modal-header">
+				<h3>
+					<i class="ri-user-unfollow-line"></i> Select Passengers to Cancel
+				</h3>
+				<button class="close-modal" onclick="closeModal()">
+					<i class="ri-close-line"></i>
+				</button>
+			</div>
+
+			<form action="CancelTicketServlet" method="POST" id="cancelForm">
+				<input type="hidden" name="pnr" id="cancelPnrInput">
+
+				<div class="passenger-select-list" id="passengerCheckboxes"></div>
+
+				<div class="modal-warning">
+					<i class="ri-error-warning-line"></i>
+					<p>Refund will be processed to original source. This action
+						cannot be undone.</p>
+				</div>
+
+				<div class="modal-actions">
+					<button type="button" class="btn-modal cancel"
+						onclick="closeModal()">Go Back</button>
+					<button type="submit" class="btn-modal confirm">Cancel
+						Selected</button>
+				</div>
+			</form>
+		</div>
+	</div>
 
 	<div id="toast" class="toast"></div>
 

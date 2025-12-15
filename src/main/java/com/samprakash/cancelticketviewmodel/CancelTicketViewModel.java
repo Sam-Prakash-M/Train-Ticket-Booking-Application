@@ -4,6 +4,7 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 
 import com.samprakash.paymentmodel.Passenger;
+import com.samprakash.repository.DataBaseConnector;
 
 public class CancelTicketViewModel {
 
@@ -13,6 +14,8 @@ public class CancelTicketViewModel {
 		
 		Queue<Passenger> passengerCount = new PriorityQueue<>();
 		
-		return passengerCount;
+		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
+	
+		return dataBaseConnector.getRacAndWLPassengerList(trainName,trainId);
 	}
 }
