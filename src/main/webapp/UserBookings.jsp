@@ -18,7 +18,7 @@
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="UserBookings.js?v=31"></script>
+<script defer src="UserBookings.js?v=33"></script>
 </head>
 <body>
 
@@ -120,8 +120,10 @@
 								<div class="card-details">
 									<div class="passengers-list">
 										<c:forEach var="p" items="${booking.associatedPassenger}">
-											<div class="p-row" data-name="${p.name}"
-												data-status="${p.ticketStatus}">
+											<div class="p-row" data-name="${p.name}" data-age="${p.age}"
+												data-gender="${p.gender}" data-status="${p.ticketStatus}"
+												data-classType="${booking.classType}"
+												data-seat="${p.seatMetaData.coachNo}-${p.seatMetaData.seatNumber}">
 												<div class="p-icon">
 													<i class="ri-user-3-line"></i>
 												</div>

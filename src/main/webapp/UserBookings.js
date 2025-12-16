@@ -38,48 +38,74 @@ document.addEventListener("DOMContentLoaded", () => {
 		}, 1000);
 	};
 
-	// 4. Modal Logic (Partial Cancellation)
-	const modal = document.getElementById("cancelModal");
-	const container = document.getElementById("passengerCheckboxes");
-	const pnrInput = document.getElementById("cancelPnrInput");
+	// 4. Modal Logic (JSON Data Structure)
+	    const modal = document.getElementById("cancelModal");
+	    const container = document.getElementById("passengerCheckboxes");
+	    const pnrInput = document.getElementById("cancelPnrInput");
 
-	window.openCancelModal = (pnr) => {
-		pnrInput.value = pnr;
-		container.innerHTML = ""; // Clear old data
+	    window.openCancelModal = (pnr) => {
+	        pnrInput.value = pnr;
+	        container.innerHTML = ""; 
 
-		const card = document.getElementById(`card-${pnr}`);
-		if (!card) return;
+	        const card = document.getElementById(`card-${pnr}`);
+	        if(!card) return;
 
-		// Find all passengers in that card
-		const passengers = card.querySelectorAll(".p-row");
-		let validCount = 0;
+	        const passengers = card.querySelectorAll(".p-row");
+	        let validCount = 0;
 
-		passengers.forEach(row => {
-			const name = row.dataset.name;
-			const status = row.dataset.status;
+	        passengers.forEach(row => {
+	            const name = row.dataset.name;
+	            const age = row.dataset.age;
+	            const gender = row.dataset.gender;
+	            const status = row.dataset.status;
+	            const seat = row.dataset.seat;
+				// NEW: Retrieve Class Type (dataset converts 'data-classType' to 'classtype')
+				            const classType = row.dataset.classtype;
 
-			// Only show passengers who are NOT already cancelled
-			if (status && !status.includes("CAN")) {
-				validCount++;
-				const label = document.createElement("label");
-				label.className = "p-checkbox-label";
-				label.innerHTML = `
-                    <input type="checkbox" name="selectedPassengers" value="${name}">
-                    <span class="p-name">${name}</span>
-                    <span class="status-pill ${status.includes('CNF') ? 'cnf' : 'wl'}">${status}</span>
-                `;
-				container.appendChild(label);
-			}
-		});
+	            if (status && !status.includes("CAN")) {
+	                validCount++;
+	                
+	                // 1. Construct JSON Object
+	                const passengerObj = {
+	                    name: name,
+	                    age: age,
+	                    gender: gender,
+	                    status: status,
+	                    seatNumber: seat,
+	                    pnr: pnr, // Useful context for backend
+					    classType: classType // <--- ADDED HERE
+	                };
 
-		if (validCount === 0) {
-			alert("All passengers in this ticket are already cancelled.");
-			return;
-		}
+	                // 2. Stringify to JSON
+	                // We escape single quotes just in case names contain them
+	                const jsonString = JSON.stringify(passengerObj).replace(/'/g, "&apos;");
 
-		modal.classList.add("show");
-		modal.classList.remove("hidden");
-	};
+	                const label = document.createElement("label");
+	                label.className = "p-checkbox-label";
+	                
+	                // 3. Set value='JSON_STRING'
+	                label.innerHTML = `
+	                    <input type="checkbox" name="selectedPassengers" value='${jsonString}'>
+	                    <div style="flex:1">
+	                        <span class="p-name">${name}</span>
+	                        <small style="display:block; color:var(--muted); font-size:0.75rem">
+	                            ${age}/${gender} • Seat: ${seat}
+	                        </small>
+	                    </div>
+	                    <span class="status-pill ${status.includes('CNF')?'cnf':'wl'}">${status}</span>
+	                `;
+	                container.appendChild(label);
+	            }
+	        });
+
+	        if (validCount === 0) {
+	            alert("All passengers in this ticket are already cancelled.");
+	            return;
+	        }
+
+	        modal.classList.add("show");
+	        modal.classList.remove("hidden");
+	    };
 
 	window.closeModal = () => {
 		modal.classList.remove("show");

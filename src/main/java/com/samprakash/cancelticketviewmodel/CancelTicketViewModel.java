@@ -18,4 +18,7 @@ public class CancelTicketViewModel {
 	
 		return dataBaseConnector.getRacAndWLPassengerList(trainName,trainId);
 	}
+	
+	
+	//private static BOOKING
 }
