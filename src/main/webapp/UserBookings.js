@@ -72,7 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	                    gender: gender,
 	                    status: status,
 	                    seatNumber: seat,
-	                    pnr: pnr, // Useful context for backend
 					    classType: classType // <--- ADDED HERE
 	                };
 

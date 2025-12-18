@@ -99,7 +99,7 @@ public class Passenger implements Comparable<Passenger> {
 
 		if (this.ticketStatus == thatPassenger.ticketStatus) {
 
-			return Integer.compare(this.seatMetaData.seatNumber(), this.seatMetaData.seatNumber());
+			return Integer.compare(this.seatMetaData.seatNumber(), thatPassenger.seatMetaData.seatNumber());
 		}
 		return this.ticketStatus.compareTo(thatPassenger.ticketStatus);
 	}
