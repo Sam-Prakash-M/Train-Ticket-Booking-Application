@@ -9,15 +9,19 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -27,6 +31,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
+import com.samprakash.basemodel.Status;
 import com.samprakash.basemodel.TrainBookingDatabase;
 import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
@@ -443,18 +448,18 @@ public class DataBaseConnector {
 			// --------
 			try {
 				List<Passenger> stillUnallocated = allocateConfirmedGroup(passengerList, allSeatsInClass, bookedList,
-						availCol, trainId, journeyDate, confirmedAllocated);
+						availCol, trainId, journeyDate, confirmedAllocated, classType);
 
 				// -------- PHASE B: allocate RAC for remaining --------
 				if (!stillUnallocated.isEmpty() && freeRac > 0) {
 					stillUnallocated = allocateRac(stillUnallocated, availCol, trainId, journeyDate, racLimit,
-							racAllocated);
+							racAllocated, classType);
 				}
 
 				// -------- PHASE C: allocate WL for remaining --------
 				if (!stillUnallocated.isEmpty() && freeWl > 0) {
 					stillUnallocated = allocateWl(stillUnallocated, availCol, trainId, journeyDate, wlLimit,
-							wlAllocated);
+							wlAllocated, classType);
 				}
 
 				// If anything still unallocated -> rollback everything and throw
@@ -555,7 +560,7 @@ public class DataBaseConnector {
 	 */
 	private List<Passenger> allocateConfirmedGroup(List<Passenger> passengerList, List<Document> allSeatsInClass,
 			List<String> bookedList, MongoCollection<Document> availCol, String trainId, String journeyDate,
-			List<String> confirmedAllocated) {
+			List<String> confirmedAllocated, String classType) {
 
 		List<Passenger> stillUnallocated = new ArrayList<>(passengerList);
 
@@ -585,7 +590,7 @@ public class DataBaseConnector {
 					.collect(Collectors.toList());
 
 			boolean allocated = tryAllocateFromList(p, preferred, bookedSet, availCol, availFilter, options,
-					confirmedAllocated);
+					confirmedAllocated, classType);
 
 			if (!allocated) {
 				// fallback: all available seats in order (not booked)
@@ -594,7 +599,7 @@ public class DataBaseConnector {
 						.collect(Collectors.toList());
 
 				allocated = tryAllocateFromList(p, fallback, bookedSet, availCol, availFilter, options,
-						confirmedAllocated);
+						confirmedAllocated, classType);
 			}
 
 			if (!allocated) {
@@ -613,7 +618,7 @@ public class DataBaseConnector {
 	 */
 	private boolean tryAllocateFromList(Passenger p, List<Document> seatCandidates, Set<String> bookedSet,
 			MongoCollection<Document> availCol, Document availFilter, FindOneAndUpdateOptions options,
-			List<String> confirmedAllocated) {
+			List<String> confirmedAllocated, String classType) {
 
 		for (Document seatDoc : seatCandidates) {
 			String coachNo = seatDoc.getString("coach_no");
@@ -629,7 +634,7 @@ public class DataBaseConnector {
 			if (updated != null) {
 				// success: set passenger seat and mark it in our local bookedSet and
 				// confirmedAllocated list
-				p.setSeatMetaData(new SeatMetaData(coachNo, (byte) Integer.parseInt(seatNo)));
+				p.setSeatMetaData(new SeatMetaData(classType, coachNo, (byte) Integer.parseInt(seatNo)));
 				bookedSet.add(code);
 				confirmedAllocated.add(code);
 				return true;
@@ -646,7 +651,7 @@ public class DataBaseConnector {
 	 * unallocated after RAC allocation.
 	 */
 	private List<Passenger> allocateRac(List<Passenger> remaining, MongoCollection<Document> availCol, String trainId,
-			String journeyDate, int racLimit, List<String> racAllocated) {
+			String journeyDate, int racLimit, List<String> racAllocated, String classType) {
 
 		List<Passenger> stillUnallocated = new ArrayList<>();
 
@@ -688,7 +693,7 @@ public class DataBaseConnector {
 				// If confirm == null, it's unexpected but continue — the rac code might already
 				// be replaced by another process
 				// Set passenger metadata to indicate RAC
-				p.setSeatMetaData(new SeatMetaData("RAC", (byte) idx));
+				p.setSeatMetaData(new SeatMetaData(classType, "RAC", (byte) idx));
 				p.setTicketStatus("RAC");
 				racAllocated.add(racCode);
 			} else {
@@ -703,7 +708,7 @@ public class DataBaseConnector {
 	 * Allocate WL entries similarly to RAC.
 	 */
 	private List<Passenger> allocateWl(List<Passenger> remaining, MongoCollection<Document> availCol, String trainId,
-			String journeyDate, int wlLimit, List<String> wlAllocated) {
+			String journeyDate, int wlLimit, List<String> wlAllocated, String classType) {
 
 		List<Passenger> stillUnallocated = new ArrayList<>();
 
@@ -731,7 +736,7 @@ public class DataBaseConnector {
 										Filters.eq("wl." + (idx - 1), "WL")),
 								Updates.set("wl." + (idx - 1), wlCode), options);
 
-				p.setSeatMetaData(new SeatMetaData("WL", (byte) idx));
+				p.setSeatMetaData(new SeatMetaData(classType, "WL", (byte) idx));
 				p.setTicketStatus("WL");
 				wlAllocated.add(wlCode);
 			} else {
@@ -860,7 +865,8 @@ public class DataBaseConnector {
 
 						passenger.setTicketStatus(currentStatus);
 
-						SeatMetaData seat = new SeatMetaData(coachNo, Byte.parseByte(currentStatus.split("/")[1]));
+						SeatMetaData seat = new SeatMetaData(classType, coachNo,
+								Byte.parseByte(currentStatus.split("/")[1]));
 						passenger.setSeatMetaData(seat);
 
 						associatedPassenger.add(passenger);
@@ -897,7 +903,8 @@ public class DataBaseConnector {
 					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
 
 			FindIterable<Document> allBookingDocument = bookingStateCollection
-					.find(Filters.eq(BookingState.USER_NAME.name(), userName));
+					.find(Filters.and(Filters.eq(BookingState.USER_NAME.name(), userName),
+							Filters.eq(BookingState.BOOKING_STATUS.name(), Status.SUCCESS.name())));
 
 			for (Document eachBooking : allBookingDocument) {
 
@@ -935,7 +942,8 @@ public class DataBaseConnector {
 
 					passenger.setTicketStatus(currentStatus);
 
-					SeatMetaData seat = new SeatMetaData(coachNo, Byte.parseByte(currentStatus.split("/")[1]));
+					SeatMetaData seat = new SeatMetaData(classType, coachNo,
+							Byte.parseByte(currentStatus.split("/")[1]));
 					passenger.setSeatMetaData(seat);
 
 					associatedPassenger.add(passenger);
@@ -948,6 +956,245 @@ public class DataBaseConnector {
 
 		}
 		return allBooking;
+	}
+
+	public Queue<Passenger> findRacAndWlPassengerIfExists(String pnrNumber,
+			Map<String, Passenger> cancelledPassengerList) {
+
+		// PriorityQueue will use Passenger.compareTo()
+		Queue<Passenger> racAndWlQueue = new PriorityQueue<>();
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase mongoDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> bookingCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
+
+			// Find booking by PNR
+			Document bookingDoc = bookingCollection.find(Filters.eq(BookingState.PNR_NUMBER.name(), pnrNumber)).first();
+
+			if (bookingDoc == null) {
+				return racAndWlQueue;
+			}
+
+			String classType = bookingDoc.getString(BookingState.CLASS_TYPE.name());
+
+			String trainName = bookingDoc.getString(BookingState.TRAIN_NAME.name());
+
+			String trainId = bookingDoc.getString(BookingState.TRAIN_ID.name());
+
+			List<Document> passengerDocs = bookingDoc.getList(BookingState.ASSOCIATED_PASSENGER.name(), Document.class);
+
+			if (passengerDocs == null || passengerDocs.isEmpty()) {
+				return racAndWlQueue;
+			}
+
+			for (Document pDoc : passengerDocs) {
+
+				String currentStatus = pDoc.getString(PassengerCollection.CURRENT_STATUS.name());
+
+				// We only want RAC or WL
+				if (currentStatus == null || (!currentStatus.startsWith("RAC") && !currentStatus.startsWith("WL"))) {
+					continue;
+				}
+
+				String name = pDoc.getString(PassengerCollection.NAME.name());
+				byte age = pDoc.getInteger(PassengerCollection.AGE.name()).byteValue();
+				char gender = pDoc.getString(PassengerCollection.GENDER.name()).charAt(0);
+				String coachNo = pDoc.getString(PassengerCollection.COACH_NO.name());
+				boolean autoUpgrade = pDoc.getBoolean(PassengerCollection.OPTED_AUTO_UPGRADE.name(), false);
+
+				// Extract seat / WL / RAC number (RAC/2, WL/5)
+				byte position = Byte.parseByte(currentStatus.split("/")[1]);
+
+				Passenger passenger = new Passenger(name, null, // preference (not stored in DB)
+						age, gender, null, // nationality (not stored in DB)
+						autoUpgrade);
+
+				passenger.setTicketStatus(currentStatus.startsWith("RAC") ? "RAC" : "WL");
+
+				passenger.setSeatMetaData(new SeatMetaData(classType, coachNo, position));
+
+				racAndWlQueue.add(passenger);
+			}
+
+			if (!racAndWlQueue.isEmpty()) {
+				promoteRacAndWLPassengerIfExists(classType, trainName, trainId, racAndWlQueue, cancelledPassengerList);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return racAndWlQueue;
+	}
+
+	private void promoteRacAndWLPassengerIfExists(String classType, String trainName, String trainId,
+			Queue<Passenger> racAndWlQueue, Map<String, Passenger> cancelledPassengerList) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			ClientSession session = mongoClient.startSession();
+			session.startTransaction();
+
+			try {
+
+				MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+				MongoCollection<Document> bookingCollection = db
+						.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
+
+				MongoCollection<Document> seatAvailabilityCollection = db
+						.getCollection(TrainBookingDatabase.SEAT_AVAILABILITY.name());
+
+				while (!racAndWlQueue.isEmpty() && !cancelledPassengerList.isEmpty()) {
+
+					Passenger freedSeatPassenger = cancelledPassengerList.values().iterator().next();
+
+					cancelledPassengerList.remove(freedSeatPassenger.getTicketStatus());
+
+					Passenger promoteCandidate = racAndWlQueue.poll();
+
+					SeatMetaData seat = freedSeatPassenger.getSeatMetaData();
+
+					// 🔐 Atomic promotion
+					Document updatedPassenger = bookingCollection.findOneAndUpdate(session,
+							Filters.and(Filters.eq("ASSOCIATED_PASSENGER.NAME", promoteCandidate.getName()),
+									Filters.eq("ASSOCIATED_PASSENGER.CURRENT_STATUS",
+											promoteCandidate.getTicketStatus())),
+							Updates.set("ASSOCIATED_PASSENGER.$.CURRENT_STATUS",freedSeatPassenger.getTicketStatus()),
+							new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+
+					// If null → someone else already promoted this passenger
+					if (updatedPassenger == null) {
+						continue;
+					}
+
+					// Update seat availability atomically
+					String bookedSeat = seat.getCoachNo() + "-" + seat.getSeatNumber();
+
+					seatAvailabilityCollection
+							.updateOne(
+									session, Filters.eq("train_id", trainId), Updates
+											.combine(
+													Updates.pull("rac",
+															"RAC-" + promoteCandidate.getSeatMetaData()
+																	.getSeatNumber()),
+													Updates.push("booked", bookedSeat)));
+				}
+
+				session.commitTransaction();
+
+			} catch (Exception e) {
+				session.abortTransaction();
+				throw e;
+			} finally {
+				session.close();
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void cancelPassengerTickets(String pnrNumber, Map<String, Passenger> passengersToCancel) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase mongoDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> bookingCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
+
+			MongoCollection<Document> seatAvailabiltyCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.SEAT_AVAILABILITY.name());
+
+			// Find booking by PNR
+			Document bookingDoc = bookingCollection.find(Filters.eq(BookingState.PNR_NUMBER.name(), pnrNumber)).first();
+
+			if (bookingDoc == null) {
+				System.out.println("No Booking Available For Paritcular Pnr Number " + pnrNumber);
+				return;
+			}
+
+			String trainId = bookingDoc.getString(BookingState.TRAIN_ID.name());
+			String travelDate = bookingDoc.getString(BookingState.TRAVEL_DATE.name());
+
+			List<Document> passengerDocs = bookingDoc.getList(BookingState.ASSOCIATED_PASSENGER.name(), Document.class);
+
+			if (passengerDocs == null || passengerDocs.isEmpty()) {
+				System.out.println("No Passenger To Shown for Pnr Number " + pnrNumber);
+				return;
+			}
+
+			for (Document currentPassenger : passengerDocs) {
+
+				String currentStatus = currentPassenger.getString(PassengerCollection.CURRENT_STATUS.name());
+
+				if (passengersToCancel.containsKey(currentStatus)) {
+					currentPassenger.put(PassengerCollection.CURRENT_STATUS.name(), "CAN");
+					currentPassenger.put(PassengerCollection.CANCELLED_AT.name(), System.currentTimeMillis());
+				}
+
+			}
+
+			// Persist changes
+			bookingCollection.updateOne(Filters.eq(BookingState.PNR_NUMBER.name(), pnrNumber),
+					Updates.set(BookingState.ASSOCIATED_PASSENGER.name(), passengerDocs));
+
+			// remove Booking in Db
+			removeBookingInDb(passengersToCancel, trainId, travelDate);
+
+		}
+
+	}
+
+	private void removeBookingInDb(Map<String, Passenger> passengersToCancel, String trainId, String travelDate) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase mongoDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> seatAvailabiltyCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.SEAT_AVAILABILITY.name());
+
+			List<Bson> seatPullUpdates = new ArrayList<>();
+
+			for (Passenger passenger : passengersToCancel.values()) {
+
+				SeatMetaData seat = passenger.getSeatMetaData();
+				String ticketStatus = passenger.getTicketStatus(); // CNF / RAC / WL
+
+				switch (ticketStatus) {
+
+				case "CNF" -> {
+					String seatValue = seat.getCoachNo() + "-" + seat.getSeatNumber();
+					seatPullUpdates.add(Updates.pull("booked", seatValue));
+				}
+				case "RAC" -> {
+					String racValue = "RAC-" + seat.getSeatNumber();
+					seatPullUpdates.add(Updates.pull("rac", racValue));
+				}
+				case "WL" -> {
+					String wlValue = "WL-" + seat.getSeatNumber();
+					seatPullUpdates.add(Updates.pull("wl", wlValue));
+				}
+				default -> {
+					System.out.println("Different Passenger Status" + ticketStatus);
+				}
+				}
+
+			}
+
+			if (!seatPullUpdates.isEmpty()) {
+
+				seatAvailabiltyCollection.updateOne(
+						Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, travelDate)),
+						Updates.combine(seatPullUpdates));
+			}
+
+		}
+
 	}
 
 }
