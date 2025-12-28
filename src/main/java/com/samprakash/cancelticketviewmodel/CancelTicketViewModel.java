@@ -11,6 +11,7 @@ public class CancelTicketViewModel {
 
 		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
 
+		System.out.println("list of Passengers..."+passengerToCancel);
 		dataBaseConnector.cancelPassengerTickets(pnrNumber, passengerToCancel);
 		dataBaseConnector.findRacAndWlPassengerIfExists(pnrNumber,passengerToCancel);
 

@@ -12,6 +12,15 @@ public class Passenger implements Comparable<Passenger> {
 	private SeatMetaData seatMetaData;
 	private boolean isAutoUpgrade;
 	private String ticketStatus = "CNF";
+	private String pnrNumber;
+
+	public String getPnrNumber() {
+		return pnrNumber;
+	}
+
+	public void setPnrNumber(String pnrNumber) {
+		this.pnrNumber = pnrNumber;
+	}
 
 	public boolean isAutoUpgrade() {
 		return isAutoUpgrade;
@@ -88,10 +97,13 @@ public class Passenger implements Comparable<Passenger> {
 		this.nationalities = nationalities;
 	}
 
+	
+
 	@Override
 	public String toString() {
 		return "Passenger [name=" + name + ", preference=" + preference + ", age=" + age + ", gender=" + gender
-				+ ", nationalities=" + nationalities + ", seatMetaData=" + seatMetaData + "]";
+				+ ", nationalities=" + nationalities + ", seatMetaData=" + seatMetaData + ", isAutoUpgrade="
+				+ isAutoUpgrade + ", ticketStatus=" + ticketStatus + "]";
 	}
 
 	@Override
