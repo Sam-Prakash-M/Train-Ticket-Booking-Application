@@ -235,92 +235,69 @@ public class DataBaseConnector {
 				Document layoutDoc = seatLayoutCol.find(Filters.eq(TRAIN_ID, trainID)).first();
 				if (layoutDoc == null)
 					continue;
-				Document classInfo = (Document) layoutDoc.get("class_info");
+
+				Document classInfo = layoutDoc.get("class_info", Document.class);
+				Document coachesDoc = layoutDoc.get("coaches", Document.class);
 
 				Document seatAvail = seatAvailCol
 						.find(Filters.and(Filters.eq(TRAIN_ID, trainID), Filters.eq(DATE, journeyDate))).first();
 
-				Set<String> booked = new HashSet<>();
-				if (seatAvail != null && seatAvail.containsKey("booked")) {
-					booked.addAll(seatAvail.getList("booked", String.class));
-				}
+				Document classesAvail = seatAvail != null ? seatAvail.get("classes", Document.class) : null;
 
 				JSONObject trainJson = new JSONObject();
 
-				// NEW: coaches is a document, not an array
-				Document coachesDoc = (Document) layoutDoc.get("coaches");
-
 				for (String coachClass : coachesDoc.keySet()) {
 
-					Document classLimits = (Document) classInfo.get(coachClass);
-					int racLimit = classLimits.getInteger("rac_limit");
-					int wlLimit = classLimits.getInteger("wl_limit");
+					Document classLimits = classInfo.get(coachClass, Document.class);
+					int racLimit = classLimits.getInteger("rac_limit", 0);
+					int wlLimit = classLimits.getInteger("wl_limit", 0);
 
-					// Read RAC and WL already booked (if exist)
-					List<String> bookedRAC = new ArrayList<>();
-					List<String> bookedWL = new ArrayList<>();
-					if (seatAvail != null) {
-						if (seatAvail.containsKey("rac")) {
-							bookedRAC = seatAvail.getList("rac", String.class);
-						}
-						if (seatAvail.containsKey("wl")) {
-							bookedWL = seatAvail.getList("wl", String.class);
-						}
-					}
+					Document classAvail = classesAvail != null ? classesAvail.get(coachClass, Document.class) : null;
 
-					int usedRAC = bookedRAC.size();
-					int usedWL = bookedWL.size();
+					List<String> booked = classAvail != null
+							? classAvail.getList("booked", String.class, new ArrayList<>())
+							: new ArrayList<>();
 
-					int availableRAC = Math.max(0, racLimit - usedRAC);
-					int availableWL = Math.max(0, wlLimit - usedWL);
+					List<String> rac = classAvail != null ? classAvail.getList("rac", String.class, new ArrayList<>())
+							: new ArrayList<>();
+
+					List<String> wl = classAvail != null ? classAvail.getList("wl", String.class, new ArrayList<>())
+							: new ArrayList<>();
+
+					int availableRAC = Math.max(0, racLimit - rac.size());
+					int availableWL = Math.max(0, wlLimit - wl.size());
 
 					JSONArray coachArray = new JSONArray();
 					List<Document> coachList = (List<Document>) coachesDoc.get(coachClass);
 
 					for (Document coach : coachList) {
-
-						int available = 0;
 						String coachNo = coach.getString("coach_no");
-						List<Document> seats = coach.getList("seats", Document.class);
+						int availableSeats = 0;
 
-						for (Document seat : seats) {
-							String seatID = coachNo + "-" + seat.getString("seat_no");
-
-							if (!booked.contains(seatID)) {
-								available++;
+						for (Document seat : coach.getList("seats", Document.class)) {
+							String seatId = coachNo + "-" + seat.getString("seat_no");
+							if (!booked.contains(seatId)) {
+								availableSeats++;
 							}
 						}
 
-						JSONObject coachJson = new JSONObject();
-
-						if (available > 0) {
-							coachJson.put("coach_no", coachNo);
-							coachJson.put("available_seats", available);
-							coachArray.put(coachJson);
+						if (availableSeats > 0) {
+							coachArray.put(
+									new JSONObject().put("coach_no", coachNo).put("available_seats", availableSeats));
 						}
-
 					}
 
-					if (coachArray.isEmpty()) {
-						if (availableRAC > 0) {
-							JSONObject racJsonObj = new JSONObject();
-							racJsonObj.put("status", "RAC");
-							racJsonObj.put("available_seats", availableRAC);
-							trainJson.put(coachClass, racJsonObj);
-						} else if (availableWL > 0) {
-							JSONObject wlJsonObj = new JSONObject();
-							wlJsonObj.put("status", "WL");
-							wlJsonObj.put("available_seats", availableWL);
-							trainJson.put(coachClass, wlJsonObj);
-						} else {
-							JSONObject noTicketsJsonObj = new JSONObject();
-							noTicketsJsonObj.put("status", "NOT_AVAILABLE");
-							trainJson.put(coachClass, noTicketsJsonObj);
-						}
-					} else {
+					if (!coachArray.isEmpty()) {
 						trainJson.put(coachClass, coachArray);
+					} else if (availableRAC > 0) {
+						trainJson.put(coachClass,
+								new JSONObject().put("status", "RAC").put("available_seats", availableRAC));
+					} else if (availableWL > 0) {
+						trainJson.put(coachClass,
+								new JSONObject().put("status", "WL").put("available_seats", availableWL));
+					} else {
+						trainJson.put(coachClass, new JSONObject().put("status", "NOT_AVAILABLE"));
 					}
-
 				}
 
 				availabilityJson.put(trainID, trainJson);
@@ -392,25 +369,14 @@ public class DataBaseConnector {
 			Document layoutDoc = layoutCol.find(Filters.eq(TRAIN_ID, trainId)).first();
 			if (layoutDoc == null)
 				throw new RuntimeException("Train layout not found for " + trainId);
-
 			// Load or create availability doc for the date
 			Document availFilter = new Document(TRAIN_ID, trainId).append(DATE, journeyDate);
 			Document availDoc = availCol.find(availFilter).first();
 			if (availDoc == null) {
-				availDoc = new Document(TRAIN_ID, trainId).append(DATE, journeyDate)
-						.append("booked", new ArrayList<String>()).append("rac", new ArrayList<String>())
-						.append("wl", new ArrayList<String>());
+				availDoc = new Document(TRAIN_ID, trainId).append(DATE, journeyDate).append("classes", new Document());
 				availCol.insertOne(availDoc);
-			} else {
-				// FIX EXISTING DOCUMENTS
-				if (!availDoc.containsKey("rac") || availDoc.get("rac") == null)
-					availCol.updateOne(availFilter, Updates.set("rac", new ArrayList<String>()));
-
-				if (!availDoc.containsKey("wl") || availDoc.get("wl") == null)
-					availCol.updateOne(availFilter, Updates.set("wl", new ArrayList<String>()));
-
+				availDoc = availCol.find(availFilter).first();
 			}
-			availDoc = availCol.find(availFilter).first();
 
 			// Read class_info for limits
 			Document classInfoDoc = (Document) layoutDoc.get("class_info");
@@ -425,9 +391,19 @@ public class DataBaseConnector {
 			List<Document> allSeatsInClass = flattenSeatsFromLayout(layoutDoc, classType);
 
 			// pre-calculate counts (from DB)
-			List<String> bookedList = availDoc.getList("booked", String.class, new ArrayList<>());
-			List<String> racList = availDoc.getList("rac", String.class, new ArrayList<>());
-			List<String> wlList = availDoc.getList("wl", String.class, new ArrayList<>());
+			Document classes = availDoc.get("classes", Document.class);
+			Document classDoc = classes.get(classType, Document.class);
+
+			if (classDoc == null) {
+				classDoc = new Document("booked", new ArrayList<>()).append("rac", new ArrayList<>()).append("wl",
+						new ArrayList<>());
+				classes.put(classType, classDoc);
+				availCol.updateOne(availFilter, Updates.set("classes." + classType, classDoc));
+			}
+
+			List<String> bookedList = classDoc.getList("booked", String.class);
+			List<String> racList = classDoc.getList("rac", String.class);
+			List<String> wlList = classDoc.getList("wl", String.class);
 
 			int freeConfirmed = countFreeConfirmedSeats(allSeatsInClass, bookedList);
 			int freeRac = Math.max(0, racLimit - racList.size());
@@ -464,7 +440,7 @@ public class DataBaseConnector {
 
 				// If anything still unallocated -> rollback everything and throw
 				if (!stillUnallocated.isEmpty()) {
-					rollback(availCol, availFilter, confirmedAllocated, racAllocated, wlAllocated);
+					rollback(availCol, availFilter, confirmedAllocated, racAllocated, wlAllocated, classType);
 					throw new RuntimeException("Unable to allocate seats for all passengers. Booking rolled back.");
 				}
 
@@ -480,7 +456,7 @@ public class DataBaseConnector {
 
 			catch (Exception inner) {
 				// Rollback and propagate
-				rollback(availCol, availFilter, confirmedAllocated, racAllocated, wlAllocated);
+				rollback(availCol, availFilter, confirmedAllocated, racAllocated, wlAllocated, classType);
 				throw inner;
 			}
 
@@ -628,8 +604,9 @@ public class DataBaseConnector {
 			// Atomic push only if seat not already present in booked array
 			Document updated = availCol.findOneAndUpdate(
 					Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
-							Filters.eq(DATE, availFilter.getString(DATE)), Filters.not(Filters.in("booked", code))),
-					Updates.push("booked", code), options);
+							Filters.eq(DATE, availFilter.getString(DATE)),
+							Filters.not(Filters.in("classes." + classType + ".booked", code))),
+					Updates.push("classes." + classType + ".booked", code), options);
 
 			if (updated != null) {
 				// success: set passenger seat and mark it in our local bookedSet and
@@ -667,15 +644,18 @@ public class DataBaseConnector {
 					.findOneAndUpdate(
 							Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
 									Filters.expr(new Document("$lt",
-											Arrays.asList(new Document("$size", "$rac"), racLimit)))),
-							Updates.push("rac", "RAC"), // push a placeholder; we'll determine its index by reading
-														// updated doc
+											Arrays.asList(new Document("$size", "$classes."+classType+".rac"), racLimit)))),
+							Updates.push("classes." + classType + ".rac", "RAC"), // push a placeholder; we'll determine
+																					// its index by reading
+							// updated doc
 							options);
 
 			if (updated != null) {
 				// compute index of the newly added RAC by reading updated.rac size (it contains
 				// the newly added placeholder)
-				List<String> racListNow = updated.getList("rac", String.class, new ArrayList<>());
+				Document classes = updated.get("classes", Document.class);
+				Document classDoc = classes.get(classType, Document.class);
+				List<String> racListNow = classDoc.getList("rac", String.class,new ArrayList<>());
 				int idx = racListNow.size(); // 1-based
 				String racCode = "RAC-" + idx;
 
@@ -687,8 +667,8 @@ public class DataBaseConnector {
 				// Build update: Updates.set("rac."+(idx-1), racCode);
 				Document confirm = availCol.findOneAndUpdate(
 						Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
-								Filters.eq("rac." + (idx - 1), "RAC")),
-						Updates.set("rac." + (idx - 1), racCode), options);
+								 Filters.eq("classes." + classType + ".rac." + (idx - 1), "RAC")),
+						Updates.set("classes." + classType + ".rac." + (idx - 1),racCode), options);
 
 				// If confirm == null, it's unexpected but continue — the rac code might already
 				// be replaced by another process
@@ -721,11 +701,13 @@ public class DataBaseConnector {
 					.findOneAndUpdate(
 							Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
 									Filters.expr(
-											new Document("$lt", Arrays.asList(new Document("$size", "$wl"), wlLimit)))),
-							Updates.push("wl", "WL"), options);
+											new Document("$lt", Arrays.asList(new Document("$size", "$classes."+classType+".wl"), wlLimit)))),
+							Updates.push("classes." + classType + ".wl", "WL"), options);
 
 			if (updated != null) {
-				List<String> wlNow = updated.getList("wl", String.class, new ArrayList<>());
+				Document classes = updated.get("classes", Document.class);
+				Document classDoc = classes.get(classType, Document.class);
+				List<String> wlNow = classDoc.getList("wl", String.class, new ArrayList<>());
 				int idx = wlNow.size();
 				String wlCode = "WL-" + idx;
 
@@ -733,8 +715,8 @@ public class DataBaseConnector {
 				Document confirm = availCol
 						.findOneAndUpdate(
 								Filters.and(Filters.eq(TRAIN_ID, trainId), Filters.eq(DATE, journeyDate),
-										Filters.eq("wl." + (idx - 1), "WL")),
-								Updates.set("wl." + (idx - 1), wlCode), options);
+										Filters.eq("classes." + classType + ".wl." + (idx - 1), "WL")),
+								Updates.set("classes." + classType + ".wl." + (idx - 1), wlCode), options);
 
 				p.setSeatMetaData(new SeatMetaData(classType, "WL", (byte) idx));
 				p.setTicketStatus("WL");
@@ -752,23 +734,27 @@ public class DataBaseConnector {
 	 * arrays.
 	 */
 	private void rollback(MongoCollection<Document> availCol, Document availFilter, List<String> confirmedAllocated,
-			List<String> racAllocated, List<String> wlAllocated) {
+			List<String> racAllocated, List<String> wlAllocated, String classType) {
 
 		if ((confirmedAllocated != null && !confirmedAllocated.isEmpty())) {
 			availCol.updateOne(
 					Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
 							Filters.eq(DATE, availFilter.getString(DATE))),
-					Updates.pullAll("booked", confirmedAllocated));
+					Updates.pullAll("classes." + classType + ".booked", confirmedAllocated));
 		}
 
 		if ((racAllocated != null && !racAllocated.isEmpty())) {
-			availCol.updateOne(Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
-					Filters.eq(DATE, availFilter.getString(DATE))), Updates.pullAll("rac", racAllocated));
+			availCol.updateOne(
+					Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
+							Filters.eq(DATE, availFilter.getString(DATE))),
+					Updates.pullAll("classes." + classType + ".rac", racAllocated));
 		}
 
 		if ((wlAllocated != null && !wlAllocated.isEmpty())) {
-			availCol.updateOne(Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
-					Filters.eq(DATE, availFilter.getString(DATE))), Updates.pullAll("wl", wlAllocated));
+			availCol.updateOne(
+					Filters.and(Filters.eq(TRAIN_ID, availFilter.getString(TRAIN_ID)),
+							Filters.eq(DATE, availFilter.getString(DATE))),
+					Updates.pullAll("classes." + classType + ".wl", wlAllocated));
 		}
 	}
 
@@ -892,6 +878,7 @@ public class DataBaseConnector {
 		return matchedTicket;
 	}
 
+	@SuppressWarnings("unchecked")
 	public List<BookingData> getCurrentUserBooking(String userName) {
 
 		List<BookingData> allBooking = new ArrayList<>();
@@ -1043,7 +1030,7 @@ public class DataBaseConnector {
 			System.out.println("RAC and WaitingList Passenger " + racAndWlQueue);
 
 			if (!racAndWlQueue.isEmpty()) {
-				promoteRacAndWLPassengerIfExists(pnrNumber, classType, trainName, trainId, racAndWlQueue,
+				promoteRacAndWLPassengerIfExists(travelDate, classType, trainName, trainId, racAndWlQueue,
 						cancelledPassengerList);
 			}
 
@@ -1054,7 +1041,7 @@ public class DataBaseConnector {
 		return racAndWlQueue;
 	}
 
-	private void promoteRacAndWLPassengerIfExists(String pnrNumber, String classType, String trainName, String trainId,
+	private void promoteRacAndWLPassengerIfExists(String travelDate, String classType, String trainName, String trainId,
 			Queue<Passenger> racAndWlQueue, Map<String, Passenger> cancelledPassengerList) {
 
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
@@ -1078,15 +1065,22 @@ public class DataBaseConnector {
 
 					System.out.println("Free Seat Passenger : " + freedSeatPassenger);
 					Passenger promoteCandidate = racAndWlQueue.poll();
+
+					if (promoteCandidate == null) {
+						System.out.println("RAC and WL Passenger List are Finished...");
+						break;
+					}
 					System.out.println("Promote Passenger " + promoteCandidate);
 
 					SeatMetaData seat = freedSeatPassenger.getSeatMetaData();
 
-					String ticketStatus = promoteCandidate.getTicketStatus();
+					String promoteCandidateTicketStatus = promoteCandidate.getTicketStatus();
 
-					// 🔐 Atomic promotion
+					String freeSeatCandidateTicketStatus = freedSeatPassenger.getTicketStatus();
+
+					// 🔐 Atomic promotionser
 					Document updatedPassenger = bookingCollection.findOneAndUpdate(session,
-							Filters.and(Filters.eq("PNR_NUMBER", pnrNumber),
+							Filters.and(Filters.eq("PNR_NUMBER", promoteCandidate.getPnrNumber()),
 									Filters.elemMatch("ASSOCIATED_PASSENGER",
 											Filters.and(Filters.eq("NAME", promoteCandidate.getName()),
 													Filters.eq("CURRENT_STATUS", promoteCandidate.getTicketStatus())))),
@@ -1095,6 +1089,7 @@ public class DataBaseConnector {
 
 					// If null → someone else already promoted this passenger
 					if (updatedPassenger == null) {
+						System.out.println("Updated Passenger is Null");
 						continue;
 					}
 					System.out.println("Updated Passenger " + updatedPassenger.toJson());
@@ -1102,29 +1097,78 @@ public class DataBaseConnector {
 					// Update seat availability atomically
 					String bookedSeat = seat.getCoachNo() + "-" + seat.getSeatNumber();
 
-					if (ticketStatus.startsWith("RAC")) {
-						seatAvailabilityCollection
-								.updateOne(
-										session, Filters.eq(TRAIN_ID, trainId), Updates
-												.combine(
-														Updates.pull("rac",
-																"RAC-" + promoteCandidate.getSeatMetaData()
-																		.getSeatNumber()),
-														Updates.push("booked", bookedSeat)));
+					if (promoteCandidateTicketStatus.startsWith("RAC")) {
+
+						if (freeSeatCandidateTicketStatus.startsWith("CNF")) {
+							seatAvailabilityCollection
+									.updateOne(session, Filters.eq(TRAIN_ID, trainId),
+											Updates.combine(
+													Updates.pull("rac",
+															"RAC-" + promoteCandidate.getSeatMetaData()
+																	.getSeatNumber()),
+													Updates.push("booked", bookedSeat)));
+
+						} else if (freeSeatCandidateTicketStatus.startsWith("WL")) {
+							seatAvailabilityCollection
+									.updateOne(
+											session, Filters.eq(TRAIN_ID, trainId), Updates
+													.combine(
+															Updates.pull("rac",
+																	"RAC-" + promoteCandidate.getSeatMetaData()
+																			.getSeatNumber()),
+															Updates.push("wl", bookedSeat)));
+
+						} else if (freeSeatCandidateTicketStatus.startsWith("RAC")) {
+							seatAvailabilityCollection
+									.updateOne(session, Filters.eq(TRAIN_ID, trainId),
+											Updates.combine(
+													Updates.pull("rac",
+															"RAC-" + promoteCandidate.getSeatMetaData()
+																	.getSeatNumber()),
+													Updates.push("rac", bookedSeat)));
+						}
+
 					} else {
-						seatAvailabilityCollection
-								.updateOne(
-										session, Filters.eq(TRAIN_ID, trainId), Updates
-												.combine(
-														Updates.pull("wl",
-																"WL-" + promoteCandidate.getSeatMetaData()
-																		.getSeatNumber()),
-														Updates.push("booked", bookedSeat)));
+
+						if (freeSeatCandidateTicketStatus.startsWith("CNF")) {
+							seatAvailabilityCollection
+									.updateOne(
+											session, Filters.eq(TRAIN_ID, trainId), Updates
+													.combine(
+															Updates.pull("wl",
+																	"WL-" + promoteCandidate.getSeatMetaData()
+																			.getSeatNumber()),
+															Updates.push("booked", bookedSeat)));
+
+						} else if (freeSeatCandidateTicketStatus.startsWith("WL")) {
+							seatAvailabilityCollection
+									.updateOne(
+											session, Filters.eq(TRAIN_ID, trainId), Updates
+													.combine(
+															Updates.pull("wl",
+																	"WL-" + promoteCandidate.getSeatMetaData()
+																			.getSeatNumber()),
+															Updates.push("wl", bookedSeat)));
+
+						} else if (freeSeatCandidateTicketStatus.startsWith("RAC")) {
+							seatAvailabilityCollection
+									.updateOne(
+											session, Filters.eq(TRAIN_ID, trainId), Updates
+													.combine(
+															Updates.pull("wl",
+																	"WL-" + promoteCandidate.getSeatMetaData()
+																			.getSeatNumber()),
+															Updates.push("rac", bookedSeat)));
+						}
+
 					}
 
 				}
 
 				session.commitTransaction();
+				if (!racAndWlQueue.isEmpty()) {
+					updateSeatLocationOfRacAndWL(travelDate, trainId, trainName, classType, racAndWlQueue);
+				}
 
 			} catch (Exception e) {
 				session.abortTransaction();
@@ -1136,6 +1180,26 @@ public class DataBaseConnector {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private void updateSeatLocationOfRacAndWL(String travelDate, String trainId, String trainName, String classType,
+			Queue<Passenger> racAndWlQueue) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase mongoDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> bookingCollection = mongoDatabase
+					.getCollection(TrainBookingDatabase.BOOKING_STATE.name());
+
+			FindIterable<Document> allBookings = bookingCollection.find(Filters.and(Filters.eq(TRAIN_ID, trainId),
+					Filters.eq(TRAIN_NAME, trainName), Filters.eq(BookingState.CLASS_TYPE.name(), classType),
+					Filters.eq(BookingState.TRAVEL_DATE.name(), travelDate)));
+
+			// MongoCollection<Document>
+
+		}
+
 	}
 
 	public void cancelPassengerTickets(String pnrNumber, Map<String, Passenger> passengersToCancel) {
