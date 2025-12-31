@@ -88,7 +88,7 @@
 								<div class="card-summary">
 									<div class="train-info">
 										<div class="top-row">
-											<h2>${booking.traiName}</h2>
+											<h2>${booking.traiName} (${booking.trainId})</h2>
 											<span class="pnr-badge">PNR: ${booking.pnrNo}</span>
 										</div>
 										<div class="route-visual">
@@ -185,7 +185,7 @@
 								<div class="card-summary">
 									<div class="train-info">
 										<div class="top-row">
-											<h2>${booking.traiName}</h2>
+											<h2>${booking.traiName} (${booking.trainId})</h2>
 											<span class="pnr-badge">PNR: ${booking.pnrNo}</span>
 										</div>
 										<div class="route-visual">
