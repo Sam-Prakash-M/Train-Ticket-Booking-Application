@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,6 +34,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.UpdateResult;
 import com.samprakash.basemodel.Status;
 import com.samprakash.basemodel.TrainBookingDatabase;
 import com.samprakash.basemodel.UserCollection;
@@ -47,6 +47,7 @@ import com.samprakash.ticketbookmodel.BookingState;
 import com.samprakash.ticketbookmodel.PassengerCollection;
 import com.samprakash.ticketbookmodel.SeatMetaData;
 import com.samprakash.ticketbookmodel.Ticket;
+import com.samprakash.ticketbookmodel.TicketStatus;
 
 public class DataBaseConnector {
 
@@ -65,6 +66,7 @@ public class DataBaseConnector {
 	static class SlotCount {
 		Queue<String> freedCnfSeats = new LinkedList<>();
 		int freedRac;
+		int freedWL;
 	}
 
 	static class RacWlQueues {
@@ -1014,12 +1016,8 @@ public class DataBaseConnector {
 						classType);
 
 				// 4️⃣ recalculateAndPromote correctly
-				recalculateAndPromote(session, bookingCol, queues, trainId, trainName, travelDate, classType,
-						cnfCapacity, racLimit);
-
-				// 5️⃣ Rebuild seat availability (source of truth)
-				rebuildSeatAvailabilityFromBookings(session, bookingCol, seatAvailCol, trainId, trainName, travelDate,
-						classType);
+				recalculateAndPromote(session, bookingCol, seatLayoutCol, seatAvailCol, queues, trainId, trainName,
+						travelDate, classType, cnfCapacity, racLimit, slots);
 
 				session.commitTransaction();
 
@@ -1052,8 +1050,11 @@ public class DataBaseConnector {
 
 			if ("CNF".equals(cancelled.getTicketStatus()))
 				count.freedCnfSeats.add(seat.getCoachNo() + "-" + seat.getSeatNumber());
-			if ("RAC".equals(cancelled.getTicketStatus()))
+			else if ("RAC".equals(cancelled.getTicketStatus()))
 				count.freedRac++;
+			else if ("WL".equals(cancelled.getTicketStatus())) {
+				count.freedWL++;
+			}
 
 			p.put("CURRENT_STATUS", "CAN");
 			p.put("CANCELLED_AT", System.currentTimeMillis());
@@ -1118,58 +1119,9 @@ public class DataBaseConnector {
 		return queues;
 	}
 
-	private void promoteCorrectly(ClientSession session, MongoCollection<Document> bookingCol, RacWlQueues queues,
-			SlotCount slots, String trainId, String trainName, String travelDate, String classType, int cnfCapacity,
-			int racCapacity) {
-
-		int currentCnf = countStatus(session, bookingCol, trainId, trainName, travelDate, classType, "^CNF/");
-
-		int currentRac = countStatus(session, bookingCol, trainId, trainName, travelDate, classType, "^RAC/");
-
-		/*
-		 * =============================== STEP 1: RAC → CNF
-		 * ===============================
-		 */
-		int freeCnfSlots = cnfCapacity - currentCnf;
-		int racToCnf = Math.min(freeCnfSlots, queues.racQueue.size());
-
-		Iterator<String> seatIter = slots.freedCnfSeats.iterator();
-
-		for (int i = 0; i < racToCnf; i++) {
-			Passenger p = queues.racQueue.poll();
-			String seat = seatIter.next(); // H1-1
-
-			promoteWithSeat(session, bookingCol, p, "CNF", seat.split("-")[0], seat.split("-")[1]);
-		}
-
-		/*
-		 * =============================== STEP 2: WL → RAC
-		 * ===============================
-		 */
-		int freedRacSlots = racToCnf + slots.freedRac;
-		int availableRac = racCapacity - (currentRac - racToCnf);
-
-		int wlToRac = Math.min(availableRac, queues.wlQueue.size());
-
-		int racIndex = currentRac - racToCnf + 1;
-
-		for (int i = 0; i < wlToRac; i++) {
-			Passenger p = queues.wlQueue.poll();
-
-			promoteWithSeat(session, bookingCol, p, "RAC", "RAC", String.valueOf(racIndex++));
-		}
-	}
-
-	private int countStatus(ClientSession session, MongoCollection<Document> bookingCol, String trainId,
-			String trainName, String travelDate, String classType, String regex) {
-		return (int) bookingCol.countDocuments(session,
-				Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
-						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType),
-						Filters.elemMatch("ASSOCIATED_PASSENGER", Filters.regex("CURRENT_STATUS", regex))));
-	}
-
 	private void promoteWithSeat(ClientSession session, MongoCollection<Document> bookingCol, Passenger p,
 			String newStatus, String coach, String seatNo) {
+
 		bookingCol.updateOne(session,
 				Filters.and(Filters.eq("PNR_NUMBER", p.getPnrNumber()),
 						Filters.elemMatch("ASSOCIATED_PASSENGER",
@@ -1181,42 +1133,87 @@ public class DataBaseConnector {
 
 	private void rebuildSeatAvailabilityFromBookings(ClientSession session, MongoCollection<Document> bookingCol,
 			MongoCollection<Document> seatAvailCol, String trainId, String trainName, String travelDate,
-			String classType) {
+			String classType, TicketStatus ticketStatus) {
 
-		List<String> booked = new ArrayList<>();
-		List<String> rac = new ArrayList<>();
-		List<String> wl = new ArrayList<>();
+		// List<String> booked = new ArrayList<>();
+
+		List<String> availableList = new ArrayList<>();
 
 		FindIterable<Document> bookings = bookingCol.find(session,
 				Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
 						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType)));
 
-		for (Document b : bookings) {
-			for (Document p : b.getList("ASSOCIATED_PASSENGER", Document.class)) {
+		switch (ticketStatus) {
 
-				String s = p.getString("CURRENT_STATUS");
-				if (s == null)
-					continue;
+		case TicketStatus.CNF -> {
+			for (Document b : bookings) {
+				for (Document p : b.getList("ASSOCIATED_PASSENGER", Document.class)) {
 
-				if (s.startsWith("CNF"))
-					booked.add(p.getString("COACH_NO") + "-" + s.split("/")[1]);
-				else if (s.startsWith("RAC"))
-					rac.add("RAC");
-				else if (s.startsWith("WL"))
-					wl.add("WL");
+					String s = p.getString("CURRENT_STATUS");
+					if (s == null)
+						continue;
+
+					if (s.startsWith("CNF"))
+						availableList.add(p.getString("COACH_NO") + "-" + s.split("/")[1]);
+
+				}
 			}
+			seatAvailCol.updateOne(session,
+					Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", travelDate)),
+
+					Updates.set("classes." + classType + ".booked", availableList));
+
+		}
+		case TicketStatus.RAC -> {
+			for (Document b : bookings) {
+				for (Document p : b.getList("ASSOCIATED_PASSENGER", Document.class)) {
+
+					String s = p.getString("CURRENT_STATUS");
+					if (s == null)
+						continue;
+
+					if (s.startsWith("RAC"))
+						availableList.add("RAC");
+
+				}
+			}
+			seatAvailCol.updateOne(session,
+					Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", travelDate)),
+
+					Updates.set("classes." + classType + ".rac",
+							IntStream.range(0, availableList.size()).mapToObj(i -> "RAC-" + (i + 1)).toList()));
+		}
+		case TicketStatus.WL -> {
+			for (Document b : bookings) {
+				for (Document p : b.getList("ASSOCIATED_PASSENGER", Document.class)) {
+
+					String s = p.getString("CURRENT_STATUS");
+					if (s == null)
+						continue;
+
+					if (s.startsWith("WL"))
+						availableList.add("WL");
+
+				}
+			}
+			seatAvailCol.updateOne(session,
+					Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", travelDate)),
+
+					Updates.set("classes." + classType + ".wl",
+							IntStream.range(0, availableList.size()).mapToObj(i -> "WL-" + (i + 1)).toList()));
+		}
+		default -> {
+			throw new IllegalArgumentException("Provodied Object is Invalid");
 		}
 
-		seatAvailCol.updateOne(session, Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", travelDate)),
-				Updates.combine(Updates.set("classes." + classType + ".booked", booked),
-						Updates.set("classes." + classType + ".rac",
-								IntStream.range(0, rac.size()).mapToObj(i -> "RAC-" + (i + 1)).toList()),
-						Updates.set("classes." + classType + ".wl",
-								IntStream.range(0, wl.size()).mapToObj(i -> "WL-" + (i + 1)).toList())));
+		}
+
 	}
 
-	private void recalculateAndPromote(ClientSession session, MongoCollection<Document> bookingCol, RacWlQueues queues,
-			String trainId, String trainName, String travelDate, String classType, int cnfCapacity, int racCapacity) {
+	private void recalculateAndPromote(ClientSession session, MongoCollection<Document> bookingCol,
+			MongoCollection<Document> seatLayoutCol, MongoCollection<Document> seatAvailCol, RacWlQueues queues,
+			String trainId, String trainName, String travelDate, String classType, int cnfCapacity, int racCapacity,
+			SlotCount slots) {
 
 		// 1️⃣ Count current CNF and RAC
 		int currentCnf = (int) bookingCol.countDocuments(session,
@@ -1224,58 +1221,142 @@ public class DataBaseConnector {
 						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType),
 						Filters.elemMatch("ASSOCIATED_PASSENGER", Filters.regex("CURRENT_STATUS", "^CNF/"))));
 
+		// 2️⃣ Find free CNF seats
+		/*
+		 * Queue<String> freeCnfSeats = findFreeCnfSeats(session,
+		 * bookingCol,seatLayoutCol, trainId, trainName, travelDate, classType);
+		 */
+
+		Queue<String> freeCnfSeats = slots.freedCnfSeats;
+
+		System.out.println("Before Apply RAC....");
+
+		System.out.println("Free CNF Seats : " + freeCnfSeats);
+		System.out.println("RAC Queues : " + queues.racQueue);
+		System.out.println("WL Queues : " + queues.wlQueue);
+		// 3️.1 RAC → CNF until CNF full
+		while (!freeCnfSeats.isEmpty()) {
+
+			if (queues.racQueue.isEmpty())
+				break;
+			String seat = freeCnfSeats.poll();
+
+			Passenger p = queues.racQueue.poll();
+
+			promoteWithSeat(session, bookingCol, p, "CNF", seat.split("-")[0], seat.split("-")[1]);
+		}
+		System.out.println("After Apply RAC....");
+
+		System.out.println("Free CNF Seats : " + freeCnfSeats);
+		System.out.println("RAC Queues : " + queues.racQueue);
+		System.out.println("WL Queues : " + queues.wlQueue);
+
+		// 3.2 WL -> CNF Until CNF full
+		while (!freeCnfSeats.isEmpty()) {
+
+			if (queues.wlQueue.isEmpty())
+				break;
+			String seat = freeCnfSeats.poll();
+
+			Passenger p = queues.wlQueue.poll();
+
+			promoteWithSeat(session, bookingCol, p, "CNF", seat.split("-")[0], seat.split("-")[1]);
+		}
+		System.out.println("Before Apply WL....");
+
+		System.out.println("Free CNF Seats : " + freeCnfSeats);
+		System.out.println("RAC Queues : " + queues.racQueue);
+		System.out.println("WL Queues : " + queues.wlQueue);
+		rebuildSeatAvailabilityFromBookings(session, bookingCol, seatAvailCol, trainId, trainName, travelDate,
+				classType, TicketStatus.CNF);
 		int currentRac = (int) bookingCol.countDocuments(session,
 				Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
 						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType),
 						Filters.elemMatch("ASSOCIATED_PASSENGER", Filters.regex("CURRENT_STATUS", "^RAC/"))));
+		// 5️⃣ Rebuild seat availability (source of truth)
+		rebuildSeatAvailabilityFromBookings(session, bookingCol, seatAvailCol, trainId, trainName, travelDate,
+				classType, TicketStatus.RAC);
 
-		// 2️⃣ Find free CNF seats
-		List<String> freeCnfSeats = findFreeCnfSeats(session, bookingCol, trainId, trainName, travelDate, classType,
-				cnfCapacity);
-
-		// 3️⃣ RAC → CNF until CNF full
-		for (String seat : freeCnfSeats) {
-		    if (queues.racQueue.isEmpty()) break;
-
-		    Passenger p = queues.racQueue.poll();
-
-		    promoteWithSeat(
-		            session,
-		            bookingCol,
-		            p,
-		            "CNF",
-		            seat.split("-")[0],
-		            seat.split("-")[1]
-		    );
-		}
-		
 		int availableRac = racCapacity - currentRac;
+
+		System.out.println("Current RAC : " + currentRac);
+
+		System.out.println("Available RAC : " + availableRac);
 
 		// 4️⃣ WL → RAC until RAC full
 		for (int i = 0; i < availableRac; i++) {
-		    if (queues.wlQueue.isEmpty()) break;
+			if (queues.wlQueue.isEmpty())
+				break;
 
-		    Passenger p = queues.wlQueue.poll();
+			Passenger p = queues.wlQueue.poll();
 
-		    promoteWithSeat(
-		            session,
-		            bookingCol,
-		            p,
-		            "RAC",
-		            "RAC",
-		            String.valueOf(++currentRac)
-		    );
+			promoteWithSeat(session, bookingCol, p, "RAC", "RAC", String.valueOf(++currentRac));
+			addBooking(session, seatAvailCol, trainId, travelDate, classType, currentRac, TicketStatus.RAC);
 		}
+
+		System.out.println("After Apply WL -> RAC....");
+
+		System.out.println("Free CNF Seats : " + freeCnfSeats);
+		System.out.println("RAC Queues : " + queues.racQueue);
+		System.out.println("WL Queues : " + queues.wlQueue);
+
+		int wlSeatNo = 1;
+		while (!queues.wlQueue.isEmpty()) {
+
+			Passenger p = queues.wlQueue.poll();
+
+			promoteWithSeat(session, bookingCol, p, "WL", "WL", String.valueOf(wlSeatNo++));
+
+		}
+
+		System.out.println("After Apply WL....");
+
+		System.out.println("Free CNF Seats : " + freeCnfSeats);
+		System.out.println("RAC Queues : " + queues.racQueue);
+		System.out.println("WL Queues : " + queues.wlQueue);
+
+		rebuildSeatAvailabilityFromBookings(session, bookingCol, seatAvailCol, trainId, trainName, travelDate,
+				classType, TicketStatus.WL);
 	}
 
-	private List<String> findFreeCnfSeats(ClientSession session, MongoCollection<Document> bookingCol, String trainId,
-			String trainName, String travelDate, String classType, int cnfCapacity) {
+	private void addBooking(ClientSession session, MongoCollection<Document> seatAvailCol, String trainId,
+			String travelDate, String classType, int seatNo, TicketStatus ticketStatus) {
 
-		Set<String> allSeats = new LinkedHashSet<>();
-		for (int i = 1; i <= cnfCapacity; i++) {
-			allSeats.add("H1-" + i); // for 1A (adjust if dynamic)
+		System.out.println("Train Id in Add Booking..." + trainId + " Travel Date in Add Booking " + travelDate
+				+ "Class " + classType);
+		String seatCode, statusType;
+		switch (ticketStatus) {
+
+		case TicketStatus.RAC -> {
+			seatCode = "RAC-" + seatNo;
+			statusType = ".rac";
 		}
+		case TicketStatus.WL -> {
+			seatCode = "WL-" + seatNo;
+			statusType = ".wl";
+		}
+		default -> {
+			throw new IllegalArgumentException("Invalid Ticket Status Send");
+		}
+		}
+		System.out.println("Seat Code " + seatCode + " StatusType : " + statusType);
 
+		UpdateResult result = seatAvailCol.updateOne(session,
+				Filters.and(Filters.eq("train_id", trainId), Filters.eq("date", travelDate)),
+				Updates.push("classes." + classType + statusType, seatCode));
+
+		System.out.println("Matched: " + result.getMatchedCount());
+		System.out.println("Modified: " + result.getModifiedCount());
+	}
+
+	private Queue<String> findFreeCnfSeats(ClientSession session, MongoCollection<Document> bookingCol,
+			MongoCollection<Document> seatLayoutCol, String trainId, String trainName, String travelDate,
+			String classType) {
+
+		// 1️⃣ All seats from layout
+		Set<String> freeSeats = new LinkedHashSet<>(getAllCnfSeatsFromLayout(seatLayoutCol, trainId, classType));
+
+		// 2️⃣ Remove occupied CNF seats
 		FindIterable<Document> bookings = bookingCol.find(session,
 				Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
 						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType)));
@@ -1284,12 +1365,33 @@ public class DataBaseConnector {
 			for (Document p : booking.getList("ASSOCIATED_PASSENGER", Document.class)) {
 				String status = p.getString("CURRENT_STATUS");
 				if (status != null && status.startsWith("CNF/")) {
-					allSeats.remove(p.getString("COACH_NO") + "-" + status.split("/")[1]);
+					freeSeats.remove(p.getString("COACH_NO") + "-" + status.split("/")[1]);
 				}
 			}
 		}
+		return new PriorityQueue<>(freeSeats);
+	}
 
-		return new ArrayList<>(allSeats);
+	private List<String> getAllCnfSeatsFromLayout(MongoCollection<Document> seatLayoutCol, String trainId,
+			String classType) {
+
+		Document layout = seatLayoutCol.find(Filters.eq("train_id", trainId)).first();
+		if (layout == null)
+			throw new IllegalStateException("Seat layout not found");
+
+		List<String> allSeats = new ArrayList<>();
+
+		List<Document> coaches = layout.get("coaches", Document.class).getList(classType, Document.class);
+
+		for (Document coach : coaches) {
+			String coachNo = coach.getString("coach_no");
+
+			List<Document> seats = coach.getList("seats", Document.class);
+			for (Document seat : seats) {
+				allSeats.add(coachNo + "-" + seat.getString("seat_no"));
+			}
+		}
+		return allSeats;
 	}
 
 }
