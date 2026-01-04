@@ -1216,10 +1216,6 @@ public class DataBaseConnector {
 			SlotCount slots) {
 
 		// 1️⃣ Count current CNF and RAC
-		int currentCnf = (int) bookingCol.countDocuments(session,
-				Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
-						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType),
-						Filters.elemMatch("ASSOCIATED_PASSENGER", Filters.regex("CURRENT_STATUS", "^CNF/"))));
 
 		// 2️⃣ Find free CNF seats
 		/*
@@ -1276,6 +1272,28 @@ public class DataBaseConnector {
 		// 5️⃣ Rebuild seat availability (source of truth)
 		rebuildSeatAvailabilityFromBookings(session, bookingCol, seatAvailCol, trainId, trainName, travelDate,
 				classType, TicketStatus.RAC);
+
+		Queue<Passenger> rebalancedRACQueue = findRACSeats(session, bookingCol, trainId, trainName,
+				travelDate, classType);
+		
+		System.out.println("RebalancedRACQueue : "+rebalancedRACQueue);
+
+		int racSeatNo = 1;
+
+		if (!rebalancedRACQueue.isEmpty()) {
+
+			int currentRacSeatNo = rebalancedRACQueue.peek().getSeatMetaData().getSeatNumber();
+
+			if (racSeatNo != currentRacSeatNo) {
+				while (!rebalancedRACQueue.isEmpty()) {
+
+					Passenger p = rebalancedRACQueue.poll();
+
+					promoteWithSeat(session, bookingCol, p, "RAC", "RAC", String.valueOf(racSeatNo++));
+
+				}
+			}
+		}
 
 		int availableRac = racCapacity - currentRac;
 
@@ -1349,49 +1367,44 @@ public class DataBaseConnector {
 		System.out.println("Modified: " + result.getModifiedCount());
 	}
 
-	private Queue<String> findFreeCnfSeats(ClientSession session, MongoCollection<Document> bookingCol,
-			MongoCollection<Document> seatLayoutCol, String trainId, String trainName, String travelDate,
+	private Queue<Passenger> findRACSeats(ClientSession session, MongoCollection<Document> bookingCol,
+			 String trainId, String trainName, String travelDate,
 			String classType) {
 
-		// 1️⃣ All seats from layout
-		Set<String> freeSeats = new LinkedHashSet<>(getAllCnfSeatsFromLayout(seatLayoutCol, trainId, classType));
+		Queue<Passenger> racPassengers = new PriorityQueue<>();
 
-		// 2️⃣ Remove occupied CNF seats
-		FindIterable<Document> bookings = bookingCol.find(session,
-				Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
+		FindIterable<Document> bookings = bookingCol
+				.find(session,Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
 						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType)));
 
 		for (Document booking : bookings) {
+			String pnr = booking.getString("PNR_NUMBER");
+
 			for (Document p : booking.getList("ASSOCIATED_PASSENGER", Document.class)) {
+
 				String status = p.getString("CURRENT_STATUS");
-				if (status != null && status.startsWith("CNF/")) {
-					freeSeats.remove(p.getString("COACH_NO") + "-" + status.split("/")[1]);
+				
+				
+				if (status == null || status.equals("CAN") || !status.contains("/"))
+					continue;
+				if (status.startsWith("RAC")) {
+					
+					byte seatNo = Byte.parseByte(status.split("/")[1]);
+					Passenger passenger = new Passenger(p.getString("NAME"), null, p.getInteger("AGE").byteValue(),
+							p.getString("GENDER").charAt(0), null, p.getBoolean("OPTED_AUTO_UPGRADE", false));
+
+					passenger.setTicketStatus("RAC");
+					passenger.setPnrNumber(pnr);
+					
+					SeatMetaData seatMetadata = new SeatMetaData(classType, status, seatNo);
+					passenger.setSeatMetaData(seatMetadata);
+
+					racPassengers.offer(passenger);
 				}
 			}
 		}
-		return new PriorityQueue<>(freeSeats);
-	}
+		return racPassengers;
 
-	private List<String> getAllCnfSeatsFromLayout(MongoCollection<Document> seatLayoutCol, String trainId,
-			String classType) {
-
-		Document layout = seatLayoutCol.find(Filters.eq("train_id", trainId)).first();
-		if (layout == null)
-			throw new IllegalStateException("Seat layout not found");
-
-		List<String> allSeats = new ArrayList<>();
-
-		List<Document> coaches = layout.get("coaches", Document.class).getList(classType, Document.class);
-
-		for (Document coach : coaches) {
-			String coachNo = coach.getString("coach_no");
-
-			List<Document> seats = coach.getList("seats", Document.class);
-			for (Document seat : seats) {
-				allSeats.add(coachNo + "-" + seat.getString("seat_no"));
-			}
-		}
-		return allSeats;
 	}
 
 }
