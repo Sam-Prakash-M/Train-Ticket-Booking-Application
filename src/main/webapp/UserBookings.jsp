@@ -11,14 +11,14 @@
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="UserBookings.css?v=31">
+<link rel="stylesheet" href="UserBookings.css?v=32">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="UserBookings.js?v=33"></script>
+<script defer src="UserBookings.js?v=41"></script>
 </head>
 <body>
 
