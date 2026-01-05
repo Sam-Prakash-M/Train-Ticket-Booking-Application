@@ -1273,26 +1273,24 @@ public class DataBaseConnector {
 		rebuildSeatAvailabilityFromBookings(session, bookingCol, seatAvailCol, trainId, trainName, travelDate,
 				classType, TicketStatus.RAC);
 
-		Queue<Passenger> rebalancedRACQueue = findRACSeats(session, bookingCol, trainId, trainName,
-				travelDate, classType);
-		
-		System.out.println("RebalancedRACQueue : "+rebalancedRACQueue);
+		Queue<Passenger> rebalancedRACQueue = findRACSeats(session, bookingCol, trainId, trainName, travelDate,
+				classType);
+
+		System.out.println("RebalancedRACQueue : " + rebalancedRACQueue);
 
 		int racSeatNo = 1;
 
-		if (!rebalancedRACQueue.isEmpty()) {
-
+		while (!rebalancedRACQueue.isEmpty()) {
 			int currentRacSeatNo = rebalancedRACQueue.peek().getSeatMetaData().getSeatNumber();
-
-			if (racSeatNo != currentRacSeatNo) {
-				while (!rebalancedRACQueue.isEmpty()) {
-
-					Passenger p = rebalancedRACQueue.poll();
-
-					promoteWithSeat(session, bookingCol, p, "RAC", "RAC", String.valueOf(racSeatNo++));
-
-				}
+			if (racSeatNo == currentRacSeatNo) {
+				racSeatNo++;
+				rebalancedRACQueue.poll();
+				continue;
 			}
+			Passenger p = rebalancedRACQueue.poll();
+
+			promoteWithSeat(session, bookingCol, p, "RAC", "RAC", String.valueOf(racSeatNo++));
+
 		}
 
 		int availableRac = racCapacity - currentRac;
@@ -1367,14 +1365,13 @@ public class DataBaseConnector {
 		System.out.println("Modified: " + result.getModifiedCount());
 	}
 
-	private Queue<Passenger> findRACSeats(ClientSession session, MongoCollection<Document> bookingCol,
-			 String trainId, String trainName, String travelDate,
-			String classType) {
+	private Queue<Passenger> findRACSeats(ClientSession session, MongoCollection<Document> bookingCol, String trainId,
+			String trainName, String travelDate, String classType) {
 
 		Queue<Passenger> racPassengers = new PriorityQueue<>();
 
-		FindIterable<Document> bookings = bookingCol
-				.find(session,Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
+		FindIterable<Document> bookings = bookingCol.find(session,
+				Filters.and(Filters.eq("TRAIN_ID", trainId), Filters.eq("TRAIN_NAME", trainName),
 						Filters.eq("TRAVEL_DATE", travelDate), Filters.eq("CLASS_TYPE", classType)));
 
 		for (Document booking : bookings) {
@@ -1383,19 +1380,18 @@ public class DataBaseConnector {
 			for (Document p : booking.getList("ASSOCIATED_PASSENGER", Document.class)) {
 
 				String status = p.getString("CURRENT_STATUS");
-				
-				
+
 				if (status == null || status.equals("CAN") || !status.contains("/"))
 					continue;
 				if (status.startsWith("RAC")) {
-					
+
 					byte seatNo = Byte.parseByte(status.split("/")[1]);
 					Passenger passenger = new Passenger(p.getString("NAME"), null, p.getInteger("AGE").byteValue(),
 							p.getString("GENDER").charAt(0), null, p.getBoolean("OPTED_AUTO_UPGRADE", false));
 
 					passenger.setTicketStatus("RAC");
 					passenger.setPnrNumber(pnr);
-					
+
 					SeatMetaData seatMetadata = new SeatMetaData(classType, status, seatNo);
 					passenger.setSeatMetaData(seatMetadata);
 
