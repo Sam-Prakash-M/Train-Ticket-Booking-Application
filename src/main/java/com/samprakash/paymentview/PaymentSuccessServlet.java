@@ -4,8 +4,12 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.paypal.core.PayPalHttpClient;
+import com.paypal.http.HttpResponse;
+import com.paypal.orders.Order;
+import com.paypal.orders.OrderRequest;
+import com.paypal.orders.OrdersCaptureRequest;
 import com.samprakash.basemodel.Status;
-import com.samprakash.exception.SeatNotAvailableException;
 import com.samprakash.paymentmodel.Passenger;
 import com.samprakash.ticketbookmodel.Ticket;
 import com.samprakash.ticketbookviewmodel.TicketBookingHelper;
@@ -32,21 +36,12 @@ public class PaymentSuccessServlet extends HttpServlet {
 
 		String userID = (String) session.getAttribute("user_name");
 
-		String[] names = (String[]) session.getAttribute("names");
-		String[] ages = (String[]) session.getAttribute("ages");
-		String[] genders = (String[]) session.getAttribute("genders");
-		String[] nationalities = (String[]) session.getAttribute("nationalities");
-		String[] berths = (String[]) session.getAttribute("berths");
-
 		String travelDate = (String) session.getAttribute("travelDate");
 		String trainName = (String) session.getAttribute("trainName");
 		String trainId = (String) session.getAttribute("trainId");
 		String source = (String) session.getAttribute("source");
 		String destination = (String) session.getAttribute("destination");
-		String sourceDeparture = (String) session.getAttribute("sourceDeparture");
-		String sourceArrival = (String) session.getAttribute("sourceArrival");
-		String destinationArrival = (String) session.getAttribute("destinationArrival");
-		String destinationDeparture = (String) session.getAttribute("destinationDeparture");
+
 		String classType = (String) session.getAttribute("classType");
 		boolean isAutoUpgrade = (boolean) session.getAttribute("autoUpgrade");
 
@@ -54,6 +49,48 @@ public class PaymentSuccessServlet extends HttpServlet {
 		String email = (String) session.getAttribute("email");
 
 		Double totalAmount = (Double) session.getAttribute("total");
+
+		Set<Passenger> passengerDetails = getPassengerSet(request);
+
+		try {
+			Ticket userTicket = TicketBookingHelper.bookTicket(travelDate, passengerDetails, mobile, email, trainName,
+					trainId, totalAmount, source, destination, classType, isAutoUpgrade);
+
+			RequestDispatcher requestDispatcher = request.getRequestDispatcher("TicketBookingConfirmation.jsp");
+			if (userTicket == null) {
+				request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
+				userTicket = new Ticket(travelDate, trainId, trainName, classType, source, destination,
+						Status.NOT_APPLICAPLE.name(), null, null, totalAmount);
+				TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID, mobile, email);
+				requestDispatcher.forward(request, response);
+			} else {
+				request.setAttribute("ConfirmedTicket", userTicket);
+				TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID, mobile, email);
+				requestDispatcher.forward(request, response);
+
+			}
+
+		} catch (ServletException e) {
+
+			e.printStackTrace();
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+
+	}
+
+	private Set<Passenger> getPassengerSet(HttpServletRequest request) {
+
+		HttpSession session = request.getSession();
+
+		String[] names = (String[]) session.getAttribute("names");
+		String[] ages = (String[]) session.getAttribute("ages");
+		String[] genders = (String[]) session.getAttribute("genders");
+		String[] nationalities = (String[]) session.getAttribute("nationalities");
+		String[] berths = (String[]) session.getAttribute("berths");
+
+		boolean isAutoUpgrade = (boolean) session.getAttribute("autoUpgrade");
 
 		Set<Passenger> passengerDetails = new HashSet<>();
 
@@ -64,60 +101,128 @@ public class PaymentSuccessServlet extends HttpServlet {
 
 			case "Lower" -> {
 				newPassenger = new Passenger(names[i], "LB", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i],isAutoUpgrade);
+						nationalities[i], isAutoUpgrade);
 			}
 			case "Middle" -> {
 				newPassenger = new Passenger(names[i], "MB", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i],isAutoUpgrade);
+						nationalities[i], isAutoUpgrade);
 			}
 			case "Upper" -> {
 				newPassenger = new Passenger(names[i], "UB", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i],isAutoUpgrade);
+						nationalities[i], isAutoUpgrade);
 			}
 			case "Side Lower" -> {
 				newPassenger = new Passenger(names[i], "SL", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i],isAutoUpgrade);
+						nationalities[i], isAutoUpgrade);
 			}
 			case "Side Upper" -> {
 				newPassenger = new Passenger(names[i], "SU", Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i],isAutoUpgrade);
+						nationalities[i], isAutoUpgrade);
 			}
 			default -> {
 				newPassenger = new Passenger(names[i], berths[i], Byte.parseByte(ages[i]), genders[i].charAt(0),
-						nationalities[i],isAutoUpgrade);
+						nationalities[i], isAutoUpgrade);
 			}
 			}
 
 			passengerDetails.add(newPassenger);
 
 		}
-	
-		try {
-			Ticket userTicket = TicketBookingHelper.bookTicket(travelDate, passengerDetails, mobile, email, trainName,
-					trainId, totalAmount, source, destination, classType, isAutoUpgrade);
+		return passengerDetails;
+	}
 
-			RequestDispatcher requestDispatcher = request.getRequestDispatcher("TicketBookingConfirmation.jsp");
-			if (userTicket == null) {
-				request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
-				userTicket = new Ticket(travelDate,trainId,trainName,classType,source,destination,Status.NOT_APPLICAPLE.name(),null,null,totalAmount);
-				TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID,mobile,email);
-				requestDispatcher.forward(request, response);
-			} else {
-				request.setAttribute("ConfirmedTicket", userTicket);
-				TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID,mobile,email);
-				requestDispatcher.forward(request, response);
-			
+	// ---------------------------------------------------------
+	// 2. Handle PayPal (GET Request - Redirect from PayPal)
+	// ---------------------------------------------------------
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			 {
+
+		String paymentSource = request.getParameter("source"); // We passed ?source=PAYPAL in the URL
+		String token = request.getParameter("token"); // This is the PayPal Order ID
+
+		HttpSession session = request.getSession();
+
+		String userID = (String) session.getAttribute("user_name");
+
+		String travelDate = (String) session.getAttribute("travelDate");
+		String trainName = (String) session.getAttribute("trainName");
+		String trainId = (String) session.getAttribute("trainId");
+		String source = (String) session.getAttribute("source");
+		String destination = (String) session.getAttribute("destination");
+
+		String classType = (String) session.getAttribute("classType");
+		boolean isAutoUpgrade = (boolean) session.getAttribute("autoUpgrade");
+
+		String mobile = (String) session.getAttribute("mobile");
+		String email = (String) session.getAttribute("email");
+
+		Double totalAmount = (Double) session.getAttribute("total");
+
+		Set<Passenger> passengerDetails = getPassengerSet(request);
+
+		if ("PAYPAL".equals(paymentSource) && token != null) {
+			try {
+				// 1. Initialize Client
+				PayPalHttpClient client = PayPalClient.client();
+
+				// 2. Capture the Order (Actually take the money)
+				// The 'token' param from the URL is the Order ID
+				OrdersCaptureRequest captureRequest = new OrdersCaptureRequest(token);
+				captureRequest.requestBody(new OrderRequest());
+
+				HttpResponse<Order> responseApi = client.execute(captureRequest);
+
+				// 3. Check Status
+				if (responseApi.statusCode() == 201) { // 201 Created = Success
+					Order order = responseApi.result();
+					String transactionId = order.id(); // PayPal Transaction ID
+
+					// 4. Set Attributes for Success Page
+					request.setAttribute("payment_id", transactionId);
+					request.setAttribute("order_id", token);
+					request.setAttribute("status", "SUCCESS");
+					request.setAttribute("source", "PayPal");
+
+					Ticket userTicket = TicketBookingHelper.bookTicket(travelDate, passengerDetails, mobile, email,
+							trainName, trainId, totalAmount, source, destination, classType, isAutoUpgrade);
+
+					RequestDispatcher requestDispatcher = request.getRequestDispatcher("TicketBookingConfirmation.jsp");
+					if (userTicket == null) {
+						request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
+						userTicket = new Ticket(travelDate, trainId, trainName, classType, source, destination,
+								Status.NOT_APPLICAPLE.name(), null, null, totalAmount);
+						TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID, mobile, email);
+						requestDispatcher.forward(request, response);
+					} else {
+						request.setAttribute("ConfirmedTicket", userTicket);
+						TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID, mobile, email);
+						requestDispatcher.forward(request, response);
+
+					}
+
+				} else {
+					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "PayPal Capture Failed");
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+				try {
+					response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "PayPal Error: " + e.getMessage());
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
-
-		} catch (ServletException e) {
-
-			e.printStackTrace();
-		} catch (IOException e) {
-
-			e.printStackTrace();
+		} else {
+			// Handle invalid direct access or other errors
+			try {
+				response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Invalid Access");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-		
-
 	}
 
 }

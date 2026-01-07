@@ -3,9 +3,8 @@ package com.samprakash.paymentview;
 import java.io.InputStream;
 import java.util.Properties;
 
-import com.paypal.sdk.Environment;
-import com.paypal.sdk.PaypalServerSdkClient;
-import com.paypal.sdk.authentication.ClientCredentialsAuthModel;
+import com.paypal.core.PayPalEnvironment;
+import com.paypal.core.PayPalHttpClient;
 
 
 public class PayPalClient {
@@ -22,20 +21,12 @@ public class PayPalClient {
         }
     }
 
-    public static PaypalServerSdkClient  client() {
+    public static PayPalHttpClient  client() {
         String clientId = props.getProperty("paypal.clientId");
         String secret = props.getProperty("paypal.secret");
 
-        PaypalServerSdkClient client =
-        	    new PaypalServerSdkClient.Builder()
-        	        .clientCredentialsAuth(
-        	            new ClientCredentialsAuthModel.Builder(
-        	            		clientId,
-        	            		secret
-        	            ).build()
-        	        )
-        	        .environment(Environment.SANDBOX)
-        	        .build();
-        return client;
+     // Use Sandbox Environment
+        PayPalEnvironment environment = new PayPalEnvironment.Sandbox(clientId, secret);
+        return new PayPalHttpClient(environment);
     }
 }

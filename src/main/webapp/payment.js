@@ -45,11 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	};
 
 	window.payWithCashfree = (amount) => {
-		postToServlet("CashfreePaymentServlet", amount);
+		postToServlet("CashfreePayment", amount);
 	};
 
 	window.payWithPaypal = (amount) => {
-		postToServlet("PaypalServlet", amount);
+		postToServlet("PayPalPayment", amount);
 	};
 
 });
