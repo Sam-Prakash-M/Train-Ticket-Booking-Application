@@ -110,6 +110,11 @@
         <artifactId>checkout-sdk</artifactId>
         <version>2.0.0</version>
     </dependency>
+    
+    <dependency>
+    <groupId>com.cashfree.pg.java</groupId>
+    <artifactId>cashfree_pg</artifactId>
+    <version>4.2.0</version> </dependency>
 
 		<!-- ===== MongoDB ===== -->
         <dependency>

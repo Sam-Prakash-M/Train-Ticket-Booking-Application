@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.cashfree.ApiException;
+import com.cashfree.ApiResponse;
+import com.cashfree.Cashfree;
+import com.cashfree.model.OrderEntity;
 import com.paypal.core.PayPalHttpClient;
 import com.paypal.http.HttpResponse;
 import com.paypal.orders.Order;
@@ -135,8 +139,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 	// 2. Handle PayPal (GET Request - Redirect from PayPal)
 	// ---------------------------------------------------------
 	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-			 {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) {
 
 		String paymentSource = request.getParameter("source"); // We passed ?source=PAYPAL in the URL
 		String token = request.getParameter("token"); // This is the PayPal Order ID
@@ -214,15 +217,79 @@ public class PaymentSuccessServlet extends HttpServlet {
 					e1.printStackTrace();
 				}
 			}
-		} else {
-			// Handle invalid direct access or other errors
+		} else if ("CASHFREE".equals(paymentSource)) {
+			String orderId = request.getParameter("order_id");
+
+			if (orderId == null) {
+				try {
+					response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Order ID missing");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return;
+			}
+
+			// 1. Verify Status with Cashfree Server
+			Cashfree cashfree = new Cashfree();
+			String apiVersion = "2023-08-01"; // Must match your setup
+
+			// Fetch Order Details
+			ApiResponse<OrderEntity> apiResponse = null;
 			try {
-				response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Invalid Access");
-			} catch (IOException e) {
+				apiResponse = cashfree.PGFetchOrder(apiVersion, orderId, null, null, null);
+			} catch (ApiException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			OrderEntity order = apiResponse.getData();
+
+			RequestDispatcher requestDispatcher = request.getRequestDispatcher("TicketBookingConfirmation.jsp");
+			// 2. Check if PAID
+			try {
+				if ("PAID".equals(order.getOrderStatus())) {
+					request.setAttribute("status", "SUCCESS");
+					request.setAttribute("source", "Cashfree");
+					request.setAttribute("order_id", orderId);
+					request.setAttribute("payment_id", order.getCfOrderId()); // or payment_session_id
+
+					Ticket userTicket = TicketBookingHelper.bookTicket(travelDate, passengerDetails, mobile, email,
+							trainName, trainId, totalAmount, source, destination, classType, isAutoUpgrade);
+
+					if (userTicket == null) {
+						request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
+						userTicket = new Ticket(travelDate, trainId, trainName, classType, source, destination,
+								Status.NOT_APPLICAPLE.name(), null, null, totalAmount);
+						TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID, mobile, email);
+						requestDispatcher.forward(request, response);
+					} else {
+						request.setAttribute("ConfirmedTicket", userTicket);
+						TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID, mobile, email);
+						requestDispatcher.forward(request, response);
+
+					}
+				} else {
+					request.setAttribute("errorMessage",
+							"Payment failed With Cash Free Try Different Payment GateWay.");
+					requestDispatcher.forward(request, response);
+
+				}
+			} catch (ServletException | IOException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+
+			try {
+				response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Invalid Access");
+			} catch (IOException e) {
+				
+				e.printStackTrace();
+			}
+
 		}
+
 	}
 
 }
