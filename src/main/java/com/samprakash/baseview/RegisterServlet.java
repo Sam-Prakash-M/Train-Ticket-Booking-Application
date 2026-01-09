@@ -16,62 +16,52 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet("/RegisterServlet")
 public class RegisterServlet extends HttpServlet {
 
-	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public void doPost(HttpServletRequest request,HttpServletResponse response) {
-		
-		
-		
-		
-		
+	public void doPost(HttpServletRequest request, HttpServletResponse response) {
+
 		String fullName = request.getParameter("fullname");
 		String email = request.getParameter("email");
 		String userName = request.getParameter("username");
 		String rawPassWord = request.getParameter("password");
 		String contactNo = request.getParameter("contactno");
-		
+
 		String hashedPassword = Hashing.getHashedPassword(rawPassWord);
-		
-		
-		Users newUser = new Users(fullName,email,contactNo,userName,hashedPassword);
-		
+
+		Users newUser = new Users(fullName, email, contactNo, userName, hashedPassword);
+
 		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
-		
+
 		boolean isUserAdded = dataBaseConnector.addUser(newUser);
-		
-		if(!isUserAdded) {
-			
-			request.setAttribute("message","User Already Exist With Username "+userName);
+
+		if (!isUserAdded) {
+
+			request.setAttribute("message", "User Already Exist With Username " + userName);
 			RequestDispatcher requestDispatcher = request.getRequestDispatcher("register.jsp?error=exists");
-			
+
 			try {
 				requestDispatcher.forward(request, response);
 			} catch (ServletException e) {
-				
+
 				e.printStackTrace();
 			} catch (IOException e) {
-				
+
 				e.printStackTrace();
 			}
 			return;
-			
+
 		}
-		
-		
-        try {
+
+		try {
 			response.sendRedirect("login.jsp?registered=true");
 		} catch (IOException e) {
-			
+
 			e.printStackTrace();
 		}
-		
-		
-		
-		
+
 	}
 }
