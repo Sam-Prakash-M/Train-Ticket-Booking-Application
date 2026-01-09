@@ -125,6 +125,7 @@ public class DataBaseConnector {
 					.getCollection(TrainBookingDatabase.USERS.name());
 			Document newUserDocument = new Document(UserCollection.FULL_NAME.name(), newUser.fullName())
 					.append(UserCollection.EMAIL.name(), newUser.email())
+					.append(UserCollection.CONTACT_NO.name(), newUser.contactNo())
 					.append(UserCollection.USER_NAME.name(), newUser.userName())
 					.append(UserCollection.HASHED_PASSWORD.name(), newUser.hashedPassword());
 
@@ -1436,7 +1437,7 @@ public class DataBaseConnector {
 	}
 
 	public void updatePassword(String userName, String hashedPassword) {
-		
+
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
 
 			MongoDatabase trainBookingDatabase = mongoClient
@@ -1444,25 +1445,68 @@ public class DataBaseConnector {
 
 			MongoCollection<Document> userCollection = trainBookingDatabase
 					.getCollection(TrainBookingDatabase.USERS.name());
-			
+
 			Document userDocument = userCollection.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
-			
+
 			String latestHashedPasswordfromDB = userDocument.getString(UserCollection.HASHED_PASSWORD.name());
 			String previousHashedPassword2fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_2.name());
 
-			  Document updateFields = new Document()
-		                .append(UserCollection.HASHED_PASSWORD.name(), hashedPassword)
-		                .append(UserCollection.HASHED_PASSWORD_2.name(), latestHashedPasswordfromDB)
-		                .append(UserCollection.HASHED_PASSWORD_3.name(), previousHashedPassword2fromDB);
-			
-			  UpdateResult result = userCollection.updateOne(
-		                Filters.eq(UserCollection.USER_NAME.name(), userName),
-		                new Document("$set", updateFields)
-		        );
-			
-			 System.out.println("Updated Document Count : "+result.getModifiedCount());
+			Document updateFields = new Document().append(UserCollection.HASHED_PASSWORD.name(), hashedPassword)
+					.append(UserCollection.HASHED_PASSWORD_2.name(), latestHashedPasswordfromDB)
+					.append(UserCollection.HASHED_PASSWORD_3.name(), previousHashedPassword2fromDB);
+
+			UpdateResult result = userCollection.updateOne(Filters.eq(UserCollection.USER_NAME.name(), userName),
+					new Document("$set", updateFields));
+
+			System.out.println("Updated Document Count : " + result.getModifiedCount());
 		}
-		
+
+	}
+
+	public boolean updatePassengerDetails(String userName, String fullName, String email, String contactNo) {
+
+		boolean updateStatus = false;
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> users = db.getCollection(TrainBookingDatabase.USERS.name());
+
+			// 1️⃣ Fetch existing user
+			Document existingUser = users.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
+
+			// 2️⃣ Build update document dynamically
+			Document updateFields = new Document();
+
+			if (fullName != null && !fullName.equals(existingUser.getString(UserCollection.FULL_NAME.name()))) {
+				updateFields.append(UserCollection.FULL_NAME.name(), fullName);
+			}
+
+			if (email != null && !email.equals(existingUser.getString(UserCollection.EMAIL.name()))) {
+				updateFields.append(UserCollection.EMAIL.name(), email);
+			}
+
+			if (contactNo != null && !contactNo.equals(existingUser.getString(UserCollection.CONTACT_NO.name()))) {
+				updateFields.append(UserCollection.CONTACT_NO.name(), contactNo);
+			}
+
+			// 3️⃣ If nothing changed
+			if (updateFields.isEmpty()) {
+
+				return updateStatus;
+			}
+
+			// 4️⃣ Update only changed fields
+			UpdateResult result = users.updateOne(Filters.eq(UserCollection.USER_NAME.name(), userName),
+					new Document("$set", updateFields));
+
+			updateStatus = result.getModifiedCount() != 0;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+		}
+		return updateStatus;
 	}
 
 }

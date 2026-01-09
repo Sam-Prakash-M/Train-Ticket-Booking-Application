@@ -6,7 +6,7 @@ public class ProfileUpdateViewModel {
 
 	
 	
-	public static boolean updatePassengerDetails(String userName) {
+	public static boolean updatePassengerDetails(String userName,String fullName,String email,String contactNo) {
 		
 		
 		boolean updateStatus = false;
@@ -17,7 +17,7 @@ public class ProfileUpdateViewModel {
 		if(dataBaseConnector.isUserAlreadyExist(userName)) {
 			
 		
-			
+			return dataBaseConnector.updatePassengerDetails(userName,fullName,email,contactNo);
 			
 		}
 		else {
