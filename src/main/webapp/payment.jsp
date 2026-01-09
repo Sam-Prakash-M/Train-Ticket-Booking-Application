@@ -35,7 +35,7 @@ String[] berths = (String[]) request.getAttribute("berths");
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="payment.js?v=2025_HEADER"></script>
+<script defer src="payment.js?v=2026"></script>
 </head>
 <body>
 

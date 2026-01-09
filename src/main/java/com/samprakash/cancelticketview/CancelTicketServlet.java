@@ -1,5 +1,6 @@
 package com.samprakash.cancelticketview;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -50,6 +51,14 @@ public class CancelTicketServlet extends HttpServlet {
 
 		}
 		CancelTicketViewModel.CancelTicket(pnrNumber,passengerToCancel);
+		
+		response.setStatus(HttpServletResponse.SC_OK);
+        try {
+			response.getWriter().write("Cancellation Processed");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
 

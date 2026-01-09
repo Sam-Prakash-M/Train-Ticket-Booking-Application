@@ -1,0 +1,321 @@
+/* --------------------------
+   RESET & FONTS
+--------------------------- */
+@import
+	url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap')
+	;
+
+:root {
+	--bg: #fdfbf7;
+	--card: rgba(255, 255, 255, 0.85);
+	--primary: #7c3aed; /* Cashfree Purple */
+	--primary-dark: #5b21b6;
+	--text: #1a1a1a;
+	--muted: #64748b;
+	--border: rgba(124, 58, 237, 0.15);
+	--shadow-soft: 0 20px 40px rgba(124, 58, 237, 0.1);
+}
+
+[data-theme="dark"] {
+	--bg: #0f172a;
+	--card: rgba(30, 41, 59, 0.7);
+	--primary: #8b5cf6;
+	--text: #f8fafc;
+	--muted: #94a3b8;
+	--border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family: 'Inter', sans-serif;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+/* Ambient Light Background */
+.ambient-light-purple {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	background: radial-gradient(circle at 50% 40%, rgba(124, 58, 237, 0.15),
+		transparent 60%);
+}
+
+/* --------------------------
+   NAVBAR
+--------------------------- */
+.navbar {
+	background: var(--card);
+	border-bottom: 1px solid var(--border);
+	padding: 0.8rem 2rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	position: fixed;
+	top: 0;
+	width: 100%;
+	z-index: 100;
+	backdrop-filter: blur(12px);
+}
+
+.nav-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-family: 'Outfit', sans-serif;
+}
+
+.logo-box {
+	color: var(--primary);
+	font-size: 1.5rem;
+}
+
+.brand-text {
+	font-weight: 700;
+	font-size: 1.2rem;
+	letter-spacing: -0.5px;
+}
+
+.nav-menu {
+	display: flex;
+	gap: 20px;
+}
+
+.nav-menu a {
+	text-decoration: none;
+	color: var(--muted);
+	font-weight: 500;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	transition: 0.2s;
+}
+
+.nav-menu a:hover, .nav-menu a.active {
+	color: var(--primary);
+}
+
+.nav-profile {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+}
+
+.icon-btn {
+	background: none;
+	border: none;
+	color: var(--muted);
+	font-size: 1.2rem;
+	cursor: pointer;
+	transition: 0.2s;
+}
+
+.icon-btn:hover {
+	color: var(--text);
+}
+
+.user-btn {
+	background: rgba(255, 255, 255, 0.5);
+	border: 1px solid var(--border);
+	padding: 6px 16px;
+	border-radius: 30px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: var(--text);
+}
+
+.u-avatar {
+	width: 26px;
+	height: 26px;
+	background: var(--primary);
+	color: white;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-weight: 700;
+	font-size: 0.75rem;
+}
+
+/* --------------------------
+   PROCESS CARD
+--------------------------- */
+.main-content {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding-top: 60px;
+}
+
+.process-card {
+	background: var(--card);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid var(--border);
+	border-radius: 24px;
+	padding: 40px;
+	text-align: center;
+	width: 90%;
+	max-width: 400px;
+	box-shadow: var(--shadow-soft);
+	position: relative;
+	animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes zoomIn {from { transform:scale(0.9);
+	opacity: 0;
+}
+
+to {
+	transform: scale(1);
+	opacity: 1;
+}
+
+}
+.logo-area {
+	margin-bottom: 25px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.cf-logo {
+	height: 34px;
+	filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.amount-text {
+	font-family: 'Outfit', sans-serif;
+	font-size: 2.8rem;
+	font-weight: 700;
+	color: var(--text);
+	margin: 5px 0 10px 0;
+	letter-spacing: -1px;
+}
+
+.amount-text small {
+	font-size: 1.5rem;
+	color: var(--muted);
+	vertical-align: middle;
+	font-weight: 500;
+}
+
+.desc-text {
+	color: var(--muted);
+	margin-bottom: 30px;
+	font-size: 0.95rem;
+	line-height: 1.5;
+}
+
+/* Loader Animation */
+.loader-pulse {
+	width: 60px;
+	height: 60px;
+	background: var(--primary);
+	border-radius: 50%;
+	margin: 0 auto 15px;
+	animation: pulse 1.5s infinite;
+	opacity: 0.2;
+}
+
+@keyframes pulse { 0% {
+	transform: scale(0.8);
+	opacity: 0.5;
+}
+
+100%
+{
+transform
+:
+scale(
+1.5
+);
+opacity
+:
+0;
+}
+}
+.status-text {
+	font-weight: 600;
+	color: var(--primary);
+	font-size: 0.95rem;
+	animation: fadeText 1.5s infinite alternate;
+}
+
+@keyframes fadeText {from { opacity:0.6;
+	
+}
+
+to {
+	opacity: 1;
+}
+
+}
+
+/* Modern Button */
+.pay-btn-glitch {
+	background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+	color: white;
+	border: none;
+	padding: 14px 28px;
+	width: 100%;
+	border-radius: 12px;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: 0.3s;
+	box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 8px;
+}
+
+.pay-btn-glitch:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 12px 30px rgba(124, 58, 237, 0.4);
+}
+
+.cancel-link {
+	margin-top: 15px;
+	background: none;
+	border: none;
+	color: var(--muted);
+	cursor: pointer;
+	text-decoration: underline;
+	font-size: 0.9rem;
+	transition: 0.2s;
+}
+
+.cancel-link:hover {
+	color: #ef4444;
+}
+
+.secure-footer {
+	margin-top: 30px;
+	font-size: 0.8rem;
+	color: #10b981;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 6px;
+	font-weight: 500;
+	opacity: 0.9;
+}
+
+.hidden {
+	display: none;
+}
