@@ -33,11 +33,12 @@ public class RegisterServlet extends HttpServlet {
 		String email = request.getParameter("email");
 		String userName = request.getParameter("username");
 		String rawPassWord = request.getParameter("password");
+		String contactNo = request.getParameter("contactno");
 		
 		String hashedPassword = Hashing.getHashedPassword(rawPassWord);
 		
 		
-		Users newUser = new Users(fullName,email,userName,hashedPassword);
+		Users newUser = new Users(fullName,email,contactNo,userName,hashedPassword);
 		
 		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
 		
