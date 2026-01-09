@@ -1,32 +1,21 @@
 package com.samprakash.profileviewmodel;
 
+import com.samprakash.basemodel.Status;
 import com.samprakash.baseviewmodel.Hashing;
 import com.samprakash.repository.DataBaseConnector;
 
 public class PasswordUpdateViewModel {
 
-	
-	
-	public static boolean updatePassword(String userName,String newPassword) {
-		
-		boolean updateStatus = false;
-		
-		
+	public static Status updatePassword(String userName, String currentPassword, String newPassword) {
+
 		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
 		
+		System.out.println("Current Password Before Hashed : "+currentPassword);
+
 		
-		String hashedPassword = Hashing.getHashedPassword(newPassword);
-		
-		
-		if(!dataBaseConnector.isPasswordSameAsAnyOfLastThreeOldPasswords(userName,hashedPassword)) {
-			
-			dataBaseConnector.updatePassword(userName,hashedPassword);
-			updateStatus = true;
-		}
-		else {
-			System.out.println("Password was Matched with Last 3 used Passwords");
-		}
-		
-		return updateStatus;
+
+		return dataBaseConnector.isPasswordSameAsAnyOfLastThreeOldPasswords(userName, currentPassword,
+				newPassword);
+
 	}
 }

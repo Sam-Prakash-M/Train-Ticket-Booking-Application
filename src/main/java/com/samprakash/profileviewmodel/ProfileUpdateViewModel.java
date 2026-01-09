@@ -1,5 +1,6 @@
 package com.samprakash.profileviewmodel;
 
+import com.samprakash.basemodel.Users;
 import com.samprakash.repository.DataBaseConnector;
 
 public class ProfileUpdateViewModel {
@@ -25,6 +26,11 @@ public class ProfileUpdateViewModel {
 		}
 		
 		return updateStatus;
+	}
+
+	public static Users getUserDetails(String userName) {
+		
+		return DataBaseConnector.getInstance().getUserDetails(userName);
 	}
 	
 	

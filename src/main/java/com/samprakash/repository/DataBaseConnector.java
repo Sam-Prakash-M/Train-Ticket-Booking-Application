@@ -19,6 +19,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.catalina.User;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.json.JSONArray;
@@ -1404,8 +1405,10 @@ public class DataBaseConnector {
 
 	}
 
-	public boolean isPasswordSameAsAnyOfLastThreeOldPasswords(String userName, String hashedPassword) {
+	public Status isPasswordSameAsAnyOfLastThreeOldPasswords(String userName,String currentPasswordPlain, String newPasswordPlain) {
 
+		
+		Status updateStatus = Status.FAILURE;
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
 
 			MongoDatabase trainBookingDatabase = mongoClient
@@ -1413,6 +1416,7 @@ public class DataBaseConnector {
 
 			MongoCollection<Document> userCollection = trainBookingDatabase
 					.getCollection(TrainBookingDatabase.USERS.name());
+			
 
 			Document userDocument = userCollection.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
 
@@ -1421,22 +1425,31 @@ public class DataBaseConnector {
 			String previousHashedPassword2fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_2.name());
 
 			String previousHashedPassword3fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_3.name());
-
-			if (hashedPassword.equals(latestHashedPasswordfromDB)
-					|| hashedPassword.equals(previousHashedPassword2fromDB)
-					|| hashedPassword.equals(previousHashedPassword3fromDB)) {
+			
+			System.out.println("Current Password Hashed In DB : "+latestHashedPasswordfromDB);
+			System.out.println("Current Password Entered From Form  : "+currentPasswordPlain);
+			
+			if(!Hashing.isPlainPasswordMatchedWithHashedPassword(currentPasswordPlain,latestHashedPasswordfromDB)) {
+				
+				return Status.CURRENT_PASSWORD_MISMATCHED;
+			}
+			if (Hashing.isPlainPasswordMatchedWithHashedPassword(newPasswordPlain,latestHashedPasswordfromDB)
+					|| Hashing.isPlainPasswordMatchedWithHashedPassword(newPasswordPlain,previousHashedPassword2fromDB)
+					|| Hashing.isPlainPasswordMatchedWithHashedPassword(newPasswordPlain,previousHashedPassword3fromDB)) {
 
 				System.out.println("You can't Use Password which was used in last 3 time");
+				updateStatus = Status.OLD_PASSWORD_REUSED;
 			} else {
-				return true;
+				updatePassword(userName,newPasswordPlain);
+				updateStatus = Status.SUCCESS;
 			}
 
 		}
 
-		return false;
+		return updateStatus;
 	}
 
-	public void updatePassword(String userName, String hashedPassword) {
+	public void updatePassword(String userName, String newPasswordPlain) {
 
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
 
@@ -1445,13 +1458,15 @@ public class DataBaseConnector {
 
 			MongoCollection<Document> userCollection = trainBookingDatabase
 					.getCollection(TrainBookingDatabase.USERS.name());
+			
+			String newPasswordHashed = Hashing.getHashedPassword(newPasswordPlain);
 
 			Document userDocument = userCollection.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
 
 			String latestHashedPasswordfromDB = userDocument.getString(UserCollection.HASHED_PASSWORD.name());
 			String previousHashedPassword2fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_2.name());
 
-			Document updateFields = new Document().append(UserCollection.HASHED_PASSWORD.name(), hashedPassword)
+			Document updateFields = new Document().append(UserCollection.HASHED_PASSWORD.name(), newPasswordHashed)
 					.append(UserCollection.HASHED_PASSWORD_2.name(), latestHashedPasswordfromDB)
 					.append(UserCollection.HASHED_PASSWORD_3.name(), previousHashedPassword2fromDB);
 
@@ -1507,6 +1522,33 @@ public class DataBaseConnector {
 
 		}
 		return updateStatus;
+	}
+
+	public Users getUserDetails(String userName) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> users = db.getCollection(TrainBookingDatabase.USERS.name());
+
+			// 1️⃣ Fetch existing user
+			Document existingUser = users.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
+
+			if (existingUser == null) {
+				return null;
+			}
+
+			String fullName = existingUser.getString(UserCollection.FULL_NAME.name());
+
+			String hashedPassword = existingUser.getString(UserCollection.HASHED_PASSWORD.name());
+
+			String email = existingUser.getString(UserCollection.EMAIL.name());
+
+			String contactNo = existingUser.getString(UserCollection.CONTACT_NO.name());
+			System.out.println("User Object Retrieved");
+			return new Users(fullName, email, contactNo, userName, hashedPassword);
+		}
+
 	}
 
 }
