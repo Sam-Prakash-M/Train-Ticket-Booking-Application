@@ -1403,4 +1403,66 @@ public class DataBaseConnector {
 
 	}
 
+	public boolean isPasswordSameAsAnyOfLastThreeOldPasswords(String userName, String hashedPassword) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase trainBookingDatabase = mongoClient
+					.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> userCollection = trainBookingDatabase
+					.getCollection(TrainBookingDatabase.USERS.name());
+
+			Document userDocument = userCollection.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
+
+			String latestHashedPasswordfromDB = userDocument.getString(UserCollection.HASHED_PASSWORD.name());
+
+			String previousHashedPassword2fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_2.name());
+
+			String previousHashedPassword3fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_3.name());
+
+			if (hashedPassword.equals(latestHashedPasswordfromDB)
+					|| hashedPassword.equals(previousHashedPassword2fromDB)
+					|| hashedPassword.equals(previousHashedPassword3fromDB)) {
+
+				System.out.println("You can't Use Password which was used in last 3 time");
+			} else {
+				return true;
+			}
+
+		}
+
+		return false;
+	}
+
+	public void updatePassword(String userName, String hashedPassword) {
+		
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
+
+			MongoDatabase trainBookingDatabase = mongoClient
+					.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME, ""));
+
+			MongoCollection<Document> userCollection = trainBookingDatabase
+					.getCollection(TrainBookingDatabase.USERS.name());
+			
+			Document userDocument = userCollection.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
+			
+			String latestHashedPasswordfromDB = userDocument.getString(UserCollection.HASHED_PASSWORD.name());
+			String previousHashedPassword2fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_2.name());
+
+			  Document updateFields = new Document()
+		                .append(UserCollection.HASHED_PASSWORD.name(), hashedPassword)
+		                .append(UserCollection.HASHED_PASSWORD_2.name(), latestHashedPasswordfromDB)
+		                .append(UserCollection.HASHED_PASSWORD_3.name(), previousHashedPassword2fromDB);
+			
+			  UpdateResult result = userCollection.updateOne(
+		                Filters.eq(UserCollection.USER_NAME.name(), userName),
+		                new Document("$set", updateFields)
+		        );
+			
+			 System.out.println("Updated Document Count : "+result.getModifiedCount());
+		}
+		
+	}
+
 }
