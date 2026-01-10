@@ -14,7 +14,7 @@ public class PasswordUpdateViewModel {
 
 		
 
-		return dataBaseConnector.isPasswordSameAsAnyOfLastThreeOldPasswords(userName, currentPassword,
+		return dataBaseConnector.updatePasswordForUserInDb(userName, currentPassword,
 				newPassword);
 
 	}
