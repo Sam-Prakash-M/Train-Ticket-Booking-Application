@@ -2,6 +2,7 @@ package com.samprakash.baseview;
 
 import java.io.IOException;
 
+import com.samprakash.basemodel.Status;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
 import com.samprakash.repository.DataBaseConnector;
@@ -36,29 +37,37 @@ public class RegisterServlet extends HttpServlet {
 
 		DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
 
-		boolean isUserAdded = dataBaseConnector.addUser(newUser);
+		Status userAddedStatus = dataBaseConnector.addUser(newUser);
 
-		if (!isUserAdded) {
-
-			request.setAttribute("message", "User Already Exist With Username " + userName);
-			RequestDispatcher requestDispatcher = request.getRequestDispatcher("register.jsp?error=exists");
-
-			try {
-				requestDispatcher.forward(request, response);
-			} catch (ServletException e) {
-
-				e.printStackTrace();
-			} catch (IOException e) {
-
-				e.printStackTrace();
-			}
-			return;
-
-		}
+		RequestDispatcher requestDispatcher = request.getRequestDispatcher("register.jsp");
 
 		try {
-			response.sendRedirect("login.jsp?registered=true");
-		} catch (IOException e) {
+			switch (userAddedStatus) {
+
+			case Status.SUCCESS -> {
+				response.sendRedirect("login.jsp?registered=true");
+			}
+			case Status.FAILURE -> {
+				request.setAttribute("message", "Failed To Add User Details");
+			}
+			case Status.EMAIL_ID_ALREADY_USED -> {
+				request.setAttribute("message", "Provided Email Id is Already used by Someone");
+			}
+			case Status.CONTACT_NO_ALREADY_USED -> {
+				request.setAttribute("message", "Provided Contact No is Already used by Someone");
+			}
+			case Status.ALREADY_EXIST -> {
+				request.setAttribute("message", "User Already Exist With Username " + userName);
+			}
+			default -> {
+				request.setAttribute("message", "Internal Server Error");
+			}
+			}
+
+			requestDispatcher.forward(request, response);
+		}
+
+		catch (ServletException | IOException e) {
 
 			e.printStackTrace();
 		}

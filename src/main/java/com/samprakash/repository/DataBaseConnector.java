@@ -105,18 +105,32 @@ public class DataBaseConnector {
 
 	}
 
-	public boolean addUser(Users newUser) {
+	public Status addUser(Users newUser) {
 
+		Status addStatus = Status.FAILURE;
 		if (newUser == null) {
 			System.out.println("Provided User Object is Null");
-			return false;
+			return addStatus;
 		}
 
 		if (isUserAlreadyExist(newUser.userName())) {
 			System.out.println("User Already Exist");
-			return false;
+			addStatus = Status.ALREADY_EXIST;
+			return addStatus;
 		}
-
+		
+		
+		if(isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.email(), UserCollection.EMAIL)) {
+			addStatus = Status.EMAIL_ID_ALREADY_USED;
+			return addStatus;
+		}
+		
+		if(isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.contactNo(), UserCollection.CONTACT_NO)) {
+			addStatus = Status.CONTACT_NO_ALREADY_USED;
+			return addStatus;
+		}
+		
+	
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
 
 			MongoDatabase trainBookingDataBase = mongoClient
@@ -131,9 +145,11 @@ public class DataBaseConnector {
 					.append(UserCollection.HASHED_PASSWORD.name(), newUser.hashedPassword());
 
 			allUserDocument.insertOne(newUserDocument);
+			
+			addStatus = Status.SUCCESS;
 		}
 
-		return true;
+		return addStatus;
 
 	}
 
