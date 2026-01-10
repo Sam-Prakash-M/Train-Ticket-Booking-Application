@@ -101,7 +101,7 @@
 
 						<div class="menu-divider"></div>
 
-						<a href="profile.jsp" class="menu-item"> <i
+						<a href="ProfileUpdate" class="menu-item"> <i
 							class="ri-profile-line"></i> My Profile
 						</a> <a href="transactions.jsp" class="menu-item"> <i
 							class="ri-exchange-dollar-line"></i> My Transactions

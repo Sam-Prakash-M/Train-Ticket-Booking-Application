@@ -68,7 +68,7 @@ String errorMessage = (exception != null) ? exception.getMessage() : "Unknown Se
 								class="ri-checkbox-circle-fill success-icon"></i></small>
 						</div>
 						<div class="divider"></div>
-						<a href="profile.jsp"><i class="ri-user-line"></i> My Profile</a>
+						<a href="ProfileUpdate"><i class="ri-user-line"></i> My Profile</a>
 						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
 							My Transactions</a> <a href="MyBookings"><i
 							class="ri-history-line"></i> Booked Ticket History</a> <a
