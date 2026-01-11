@@ -105,7 +105,7 @@
 							class="ri-profile-line"></i> My Profile
 						</a> <a href="transactions.jsp" class="menu-item"> <i
 							class="ri-exchange-dollar-line"></i> My Transactions
-						</a> <a href="ticket_history.jsp" class="menu-item"> <i
+						</a> <a href="MyBookings" class="menu-item"> <i
 							class="ri-history-line"></i> Booked Ticket History
 						</a> <a href="refunds.jsp" class="menu-item"> <i
 							class="ri-refund-2-line"></i> Ticket Refund History

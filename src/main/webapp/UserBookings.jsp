@@ -56,7 +56,7 @@
 						<div class="divider"></div>
 						<a href="ProfileUpdate"><i class="ri-user-line"></i> My Profile</a>
 						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
-							My Transactions</a> <a href="ticket_history.jsp" class="active"><i
+							My Transactions</a> <a href="MyBookings" class="active"><i
 							class="ri-history-line"></i> Booked Ticket History</a> <a
 							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket
 							Refund History</a>
