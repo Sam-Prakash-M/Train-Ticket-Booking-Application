@@ -1,0 +1,6 @@
+package com.samprakash.paymentmodel;
+
+public enum PaymentsCollection {
+
+	TOTAL_AMOUNT, TRANSACTION_ID, USER_NAME, TRASACTION_DATE, TRANSACTION_STATUS, TRANSACTION_PURPOSE,PAYMENT_GATEWAY
+}

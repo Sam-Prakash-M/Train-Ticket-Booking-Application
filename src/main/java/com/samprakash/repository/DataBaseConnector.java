@@ -3,11 +3,11 @@ package com.samprakash.repository;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.catalina.User;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.json.JSONArray;
@@ -43,6 +42,7 @@ import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
 import com.samprakash.exception.SeatNotAvailableException;
 import com.samprakash.paymentmodel.Passenger;
+import com.samprakash.paymentmodel.PaymentsCollection;
 import com.samprakash.ticketbookmodel.BookingData;
 import com.samprakash.ticketbookmodel.BookingState;
 import com.samprakash.ticketbookmodel.PassengerCollection;
@@ -118,19 +118,18 @@ public class DataBaseConnector {
 			addStatus = Status.ALREADY_EXIST;
 			return addStatus;
 		}
-		
-		
-		if(isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.email(), UserCollection.EMAIL)) {
+
+		if (isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.email(), UserCollection.EMAIL)) {
 			addStatus = Status.EMAIL_ID_ALREADY_USED;
 			return addStatus;
 		}
-		
-		if(isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.contactNo(), UserCollection.CONTACT_NO)) {
+
+		if (isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.contactNo(),
+				UserCollection.CONTACT_NO)) {
 			addStatus = Status.CONTACT_NO_ALREADY_USED;
 			return addStatus;
 		}
-		
-	
+
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
 
 			MongoDatabase trainBookingDataBase = mongoClient
@@ -145,7 +144,7 @@ public class DataBaseConnector {
 					.append(UserCollection.HASHED_PASSWORD.name(), newUser.hashedPassword());
 
 			allUserDocument.insertOne(newUserDocument);
-			
+
 			addStatus = Status.SUCCESS;
 		}
 
@@ -1592,6 +1591,29 @@ public class DataBaseConnector {
 		}
 
 		return false;
+	}
+
+	public void storeTransactionStatusInDb(Double totalAmount, String transactionId, String userName,
+			String transactionStatus, String transactionPurpose,String paymentGateway) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> paymentCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.PAYMENTS.name());
+
+			Document newTransaction = new Document(PaymentsCollection.USER_NAME.name(), userName)
+					.append(PaymentsCollection.TRASACTION_DATE.name(), Instant.now())
+					.append(PaymentsCollection.TOTAL_AMOUNT.name(), totalAmount)
+					.append(PaymentsCollection.TRANSACTION_ID.name(), transactionId)
+					.append(PaymentsCollection.TRANSACTION_STATUS.name(), transactionStatus)
+					.append(PaymentsCollection.TRANSACTION_PURPOSE.name(), transactionPurpose)
+					.append(PaymentsCollection.PAYMENT_GATEWAY.name(), paymentGateway);
+
+			paymentCollection.insertOne(newTransaction);
+
+		}
+
 	}
 
 }

@@ -13,7 +13,7 @@ import com.paypal.orders.OrderRequest;
 import com.paypal.orders.OrdersCreateRequest;
 import com.paypal.orders.PurchaseUnitRequest;
 import com.paypal.core.PayPalHttpClient; // Ensure this is imported
-import com.samprakash.paymentview.PayPalClient; 
+import com.samprakash.paymentview.PayPalClient;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -24,70 +24,67 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet("/PayPalPayment")
 public class PayPalClientView extends HttpServlet {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        
-        try {
-            String amountStr = request.getParameter("amount");
-            if (amountStr == null || amountStr.isEmpty()) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Amount missing");
-                return;
-            }
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-            // 1. Initialize Client
-            PayPalHttpClient client = PayPalClient.client();
+		try {
+			String amountStr = request.getParameter("amount");
+			if (amountStr == null || amountStr.isEmpty()) {
+				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Amount missing");
+				return;
+			}
 
-            // 2. Construct Order Request
-            OrderRequest orderRequest = new OrderRequest();
-            orderRequest.checkoutPaymentIntent("CAPTURE");
+			// 1. Initialize Client
+			PayPalHttpClient client = PayPalClient.client();
 
-            List<PurchaseUnitRequest> purchaseUnits = new ArrayList<>();
-            PurchaseUnitRequest purchaseUnit = new PurchaseUnitRequest()
-                .amountWithBreakdown(new AmountWithBreakdown()
-                    .currencyCode("USD")
-                    .value(amountStr));
-            purchaseUnits.add(purchaseUnit);
-            orderRequest.purchaseUnits(purchaseUnits);
+			// 2. Construct Order Request
+			OrderRequest orderRequest = new OrderRequest();
+			orderRequest.checkoutPaymentIntent("CAPTURE");
 
-            // Set Redirect URLs
-            String returnUrl = "http://localhost:8080/TrainTicketBookingApplication/PaymentSuccess?source=PAYPAL";
-            String cancelUrl = "http://localhost:8080/TrainTicketBookingApplication/payment.jsp?error=cancelled";
+			List<PurchaseUnitRequest> purchaseUnits = new ArrayList<>();
+			PurchaseUnitRequest purchaseUnit = new PurchaseUnitRequest()
+					.amountWithBreakdown(new AmountWithBreakdown().currencyCode("USD").value(amountStr));
+			purchaseUnits.add(purchaseUnit);
+			orderRequest.purchaseUnits(purchaseUnits);
 
-            orderRequest.applicationContext(new ApplicationContext()
-                .returnUrl(returnUrl)
-                .cancelUrl(cancelUrl)
-                .brandName("Sam Railways")
-                .landingPage("LOGIN")
-                .userAction("PAY_NOW"));
+			String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
+					+ request.getContextPath();
+			// Set Redirect URLs
+			String returnUrl = baseUrl + "/PaymentSuccess?source=PAYPAL";
+			String cancelUrl = baseUrl + "/payment.jsp?error=cancelled";
 
-            // 3. Call PayPal API (UNCOMMENTED & FIXED)
-            OrdersCreateRequest requestApi = new OrdersCreateRequest().requestBody(orderRequest);
-            
-            // Execute the request
-            HttpResponse<Order> responseApi = client.execute(requestApi);
-            Order order = responseApi.result();
+			orderRequest.applicationContext(new ApplicationContext().returnUrl(returnUrl).cancelUrl(cancelUrl)
+					.brandName("Sam Railways").landingPage("LOGIN").userAction("PAY_NOW"));
 
-            // 4. Extract Approval Link
-            String approveLink = null;
-            for (LinkDescription link : order.links()) {
-                if ("approve".equals(link.rel())) {
-                    approveLink = link.href();
-                    break;
-                }
-            }
+			// 3. Call PayPal API (UNCOMMENTED & FIXED)
+			OrdersCreateRequest requestApi = new OrdersCreateRequest().requestBody(orderRequest);
 
-            // 5. Redirect User
-            if (approveLink != null) {
-                response.sendRedirect(approveLink);
-            } else {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "No approval link found from PayPal");
-            }
+			// Execute the request
+			HttpResponse<Order> responseApi = client.execute(requestApi);
+			Order order = responseApi.result();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "PayPal Error: " + e.getMessage());
-        }
-    }
+			// 4. Extract Approval Link
+			String approveLink = null;
+			for (LinkDescription link : order.links()) {
+				if ("approve".equals(link.rel())) {
+					approveLink = link.href();
+					break;
+				}
+			}
+
+			// 5. Redirect User
+			if (approveLink != null) {
+				response.sendRedirect(approveLink);
+			} else {
+				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "No approval link found from PayPal");
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "PayPal Error: " + e.getMessage());
+		}
+	}
 }
