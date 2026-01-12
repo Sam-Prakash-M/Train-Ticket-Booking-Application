@@ -16,6 +16,7 @@ String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
 <link rel="stylesheet" href="Confirmation.css?v=2025_HEADER">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
     const savedTheme = localStorage.getItem('sam_theme') || 'light';

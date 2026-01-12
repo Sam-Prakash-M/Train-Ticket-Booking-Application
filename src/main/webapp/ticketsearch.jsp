@@ -27,6 +27,7 @@ String maxDateFormatted = maxDate.toString();
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <link rel="stylesheet" href="ticketsearch.css?v=2025_HEADER">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';

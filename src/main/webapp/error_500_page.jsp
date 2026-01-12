@@ -21,6 +21,7 @@ String errorMessage = (exception != null) ? exception.getMessage() : "Unknown Se
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
 <link rel="stylesheet" href="error_500_page.css?v=2025">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';

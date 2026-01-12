@@ -16,10 +16,7 @@ java.time.LocalDate maxDate = today.plusDays(90);
 <title>Sam Railways | Next Gen Travel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f172a">
-
-<link rel="icon"
-	href="https://cdn-icons-png.flaticon.com/512/3256/3256036.png"
-	type="image/png">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />

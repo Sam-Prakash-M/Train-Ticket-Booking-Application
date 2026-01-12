@@ -21,6 +21,7 @@ String amount = (String) request.getAttribute("amount");
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
 <link rel="stylesheet" href="cashfreeCheckout.css?v=2025_MODERN_CF">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
     const savedTheme = localStorage.getItem('sam_theme') || 'light';

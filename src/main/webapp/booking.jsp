@@ -13,6 +13,7 @@
 	rel="stylesheet" />
 
 <link rel="stylesheet" href="booking.css?v=2025_2">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';

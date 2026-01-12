@@ -26,6 +26,7 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 <link rel="stylesheet"
 	href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
 <link rel="stylesheet" href="ProfileUpdate.css?v=2026">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
     const savedTheme = localStorage.getItem('sam_theme') || 'light';
