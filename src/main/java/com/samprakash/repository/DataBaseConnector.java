@@ -4,9 +4,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +37,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import com.samprakash.basemodel.Status;
@@ -43,6 +48,9 @@ import com.samprakash.baseviewmodel.Hashing;
 import com.samprakash.exception.SeatNotAvailableException;
 import com.samprakash.paymentmodel.Passenger;
 import com.samprakash.paymentmodel.PaymentsCollection;
+import com.samprakash.paymentmodel.TransactionPurpose;
+import com.samprakash.paymentview.PaymentGateway;
+import com.samprakash.profilemodel.TransactionData;
 import com.samprakash.ticketbookmodel.BookingData;
 import com.samprakash.ticketbookmodel.BookingState;
 import com.samprakash.ticketbookmodel.PassengerCollection;
@@ -1594,7 +1602,7 @@ public class DataBaseConnector {
 	}
 
 	public void storeTransactionStatusInDb(Double totalAmount, String transactionId, String userName,
-			String transactionStatus, String transactionPurpose,String paymentGateway) {
+			String transactionStatus, String transactionPurpose, String paymentGateway) {
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
 
 			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
@@ -1614,6 +1622,91 @@ public class DataBaseConnector {
 
 		}
 
+	}
+
+	public List<TransactionData> getCurrentUserTransactionList(String userName) {
+		List<TransactionData> transactionList = new LinkedList<>();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MMMM dd EEE HH:mm:ss");
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> paymentsCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.PAYMENTS.name());
+
+			FindIterable<Document> usersTransactionDocument = paymentsCollection
+					.find(Filters.eq(PaymentsCollection.USER_NAME.name(), userName));
+
+			for (Document transaction : usersTransactionDocument) {
+
+				String transactionId = transaction.getString(PaymentsCollection.TRANSACTION_ID.name());
+
+				Date date = transaction.getDate(PaymentsCollection.TRASACTION_DATE.name());
+
+				LocalDateTime ldt = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+				String transactionDate = ldt.format(formatter);
+
+				String transactionStatus = transaction.getString(PaymentsCollection.TRANSACTION_STATUS.name());
+				String transactionPurpose = transaction.getString(PaymentsCollection.TRANSACTION_PURPOSE.name());
+
+				String paymentGateWay = transaction.getString(PaymentsCollection.PAYMENT_GATEWAY.name());
+
+				double totalAmount = transaction.getDouble(PaymentsCollection.TOTAL_AMOUNT.name());
+
+				TransactionData transactionDocument = new TransactionData(userName, totalAmount, transactionDate,
+						transactionId, Status.valueOf(transactionStatus),
+						TransactionPurpose.valueOf(transactionPurpose), PaymentGateway.valueOf(paymentGateWay));
+				transactionList.add(transactionDocument);
+
+			}
+
+		}
+
+		return transactionList;
+	}
+
+	public List<TransactionData> getCurrentUserTransactionList(String userName, int offset, int pageSize) {
+
+		List<TransactionData> transactionList = new LinkedList<>();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MMMM dd EEE HH:mm:ss");
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> paymentsCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.PAYMENTS.name());
+
+			// 1. Create the query
+			FindIterable<Document> usersTransactionDocument = paymentsCollection
+					.find(Filters.eq(PaymentsCollection.USER_NAME.name(), userName))
+					// 2. SORT: Newest transactions first (Essential for consistent pagination)
+					.sort(Sorts.descending(PaymentsCollection.TRASACTION_DATE.name()))
+					// 3. SKIP: The number of records to jump over (offset)
+					.skip(offset)
+					// 4. LIMIT: The max number of records to return (pageSize)
+					.limit(pageSize);
+
+			for (Document transaction : usersTransactionDocument) {
+
+				String transactionId = transaction.getString(PaymentsCollection.TRANSACTION_ID.name());
+				Date date = transaction.getDate(PaymentsCollection.TRASACTION_DATE.name());
+
+				LocalDateTime ldt = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+				String transactionDate = ldt.format(formatter);
+				String transactionStatus = transaction.getString(PaymentsCollection.TRANSACTION_STATUS.name());
+				String transactionPurpose = transaction.getString(PaymentsCollection.TRANSACTION_PURPOSE.name());
+				String paymentGateWay = transaction.getString(PaymentsCollection.PAYMENT_GATEWAY.name());
+				double totalAmount = transaction.getDouble(PaymentsCollection.TOTAL_AMOUNT.name());
+
+				TransactionData transactionDocument = new TransactionData(userName, totalAmount, transactionDate,
+						transactionId, Status.valueOf(transactionStatus),
+						TransactionPurpose.valueOf(transactionPurpose), PaymentGateway.valueOf(paymentGateWay));
+
+				transactionList.add(transactionDocument);
+			}
+		}
+
+		return transactionList;
 	}
 
 }
