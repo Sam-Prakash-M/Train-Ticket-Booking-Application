@@ -894,10 +894,14 @@ public class DataBaseConnector {
 								autoUpgrade);
 
 						passenger.setTicketStatus(currentStatus);
+						
+						if(!currentStatus.equals("CAN")) {
+							SeatMetaData seat = new SeatMetaData(classType, coachNo,
+									Byte.parseByte(currentStatus.split("/")[1]));
+							passenger.setSeatMetaData(seat);
+						}
 
-						SeatMetaData seat = new SeatMetaData(classType, coachNo,
-								Byte.parseByte(currentStatus.split("/")[1]));
-						passenger.setSeatMetaData(seat);
+						
 
 						associatedPassenger.add(passenger);
 					}
@@ -1708,5 +1712,7 @@ public class DataBaseConnector {
 
 		return transactionList;
 	}
+
+
 
 }
