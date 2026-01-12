@@ -8,11 +8,9 @@ if (userName == null) {
 }
 Users currentUser = (Users) request.getAttribute("currentUser");
 
-// Fallback if attribute is null (for direct access testing)
 String currentName = (currentUser != null) ? currentUser.fullName() : (String) session.getAttribute("user_fullname");
 String currentEmail = (currentUser != null) ? currentUser.email() : (String) session.getAttribute("user_email");
 String currentPhone = (currentUser != null) ? currentUser.contactNo() : "";
-
 String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 %>
 <!DOCTYPE html>
@@ -27,7 +25,7 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 	rel="stylesheet" />
 <link rel="stylesheet"
 	href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-<link rel="stylesheet" href="ProfileUpdate.css?v=2026_NEON">
+<link rel="stylesheet" href="ProfileUpdate.css?v=2026">
 
 <script>
     const savedTheme = localStorage.getItem('sam_theme') || 'light';
@@ -35,7 +33,7 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 </script>
 <script defer
 	src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
-<script defer src="ProfileUpdate.js?v=2026_NEON"></script>
+<script defer src="ProfileUpdate.js?v=2026_FIXED"></script>
 </head>
 <body>
 
@@ -56,9 +54,11 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 					Bookings</a>
 			</div>
 			<div class="nav-profile">
-				<button id="themeToggle" class="icon-btn">
-					<i class="ri-moon-line"></i>
+				<button id="themeToggle" class="theme-btn">
+					<i class="ri-sun-line light-icon"></i> <i
+						class="ri-moon-line dark-icon"></i>
 				</button>
+
 				<div class="user-dropdown">
 					<button class="user-btn">
 						<span class="u-avatar"><%=userInitial%></span> <span
@@ -72,9 +72,10 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 
 			<div class="profile-card glass animate-up">
 
-				<div class="edit-badge">
-					<i class="ri-edit-2-fill"></i>
-				</div>
+				<button type="button" class="edit-badge" id="editTrigger"
+					onclick="enableEditMode()">
+					<i class="ri-pencil-fill"></i>
+				</button>
 
 				<div class="profile-header">
 					<div class="avatar-glow">
@@ -94,9 +95,9 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 							<label>Full Name</label>
 							<div class="field-box">
 								<i class="ri-user-smile-line icon"></i> <input type="text"
-									name="FullName"
+									name="FullName" id="inpName"
 									value="<%=currentName != null ? currentName : ""%>"
-									placeholder="Enter full name" required>
+									placeholder="Enter full name" required disabled>
 							</div>
 						</div>
 
@@ -104,9 +105,9 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 							<label>Email Address</label>
 							<div class="field-box">
 								<i class="ri-mail-line icon"></i> <input type="email"
-									name="Email"
+									name="Email" id="inpEmail"
 									value="<%=currentEmail != null ? currentEmail : ""%>"
-									placeholder="Enter email" required>
+									placeholder="Enter email" required disabled>
 							</div>
 						</div>
 
@@ -115,7 +116,7 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 							<div class="field-box phone-box">
 								<input type="tel" id="mobile"
 									value="<%=currentPhone != null ? currentPhone : ""%>"
-									placeholder=" " required> <input type="hidden"
+									placeholder=" " required disabled> <input type="hidden"
 									name="ContactNo" id="fullMobileNumber">
 							</div>
 							<span id="valid-msg" class="hide">✓ Valid</span> <span
@@ -132,23 +133,26 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 
 					</div>
 
-					<div class="security-section">
-						<div class="sec-info">
-							<h4>
-								<i class="ri-lock-password-line"></i> Password & Security
-							</h4>
-							<p>Manage your password to keep your account safe.</p>
-						</div>
-						<button type="button" class="btn-outline"
-							onclick="openPasswordModal()">Change Password</button>
-					</div>
+					<div id="editActions" class="hidden-section">
 
-					<div class="form-actions">
-						<button type="button" class="btn-cancel"
-							onclick="window.history.back()">Back</button>
-						<button type="submit" class="btn-save">
-							Update Profile <i class="ri-save-3-line"></i>
-						</button>
+						<div class="security-section">
+							<div class="sec-info">
+								<h4>
+									<i class="ri-lock-password-line"></i> Security
+								</h4>
+								<p>Update your password.</p>
+							</div>
+							<button type="button" class="btn-outline"
+								onclick="openPasswordModal()">Change Password</button>
+						</div>
+
+						<div class="form-actions">
+							<button type="button" class="btn-cancel"
+								onclick="cancelEditMode()">Cancel</button>
+							<button type="submit" class="btn-save">
+								Save Changes <i class="ri-save-3-line"></i>
+							</button>
+						</div>
 					</div>
 
 				</form>
@@ -185,7 +189,7 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 				<div class="modal-footer">
 					<button type="button" class="btn-cancel"
 						onclick="closePasswordModal()">Cancel</button>
-					<button type="submit" class="btn-save">Update Password</button>
+					<button type="submit" class="btn-save">Update</button>
 				</div>
 			</form>
 		</div>

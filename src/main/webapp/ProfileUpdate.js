@@ -1,11 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-	// 1. Theme Logic
+	// 1. Theme Logic (Fixed Toggle)
 	const toggle = document.getElementById("themeToggle");
 	if (toggle) {
 		toggle.addEventListener("click", () => {
 			const root = document.documentElement;
-			const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+			const current = root.getAttribute("data-theme");
+			const next = current === "dark" ? "light" : "dark";
 			root.setAttribute("data-theme", next);
 			localStorage.setItem("sam_theme", next);
 		});
@@ -16,10 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	const hiddenInput = document.querySelector("#fullMobileNumber");
 	const errorMsg = document.querySelector("#error-msg");
 	const validMsg = document.querySelector("#valid-msg");
+	let iti;
 
 	if (phoneInput) {
-		// Init with existing value handling
-		const iti = window.intlTelInput(phoneInput, {
+		iti = window.intlTelInput(phoneInput, {
 			utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
 			initialCountry: "auto",
 			geoIpLookup: function(callback) {
@@ -31,11 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			separateDialCode: true
 		});
 
-		// Pre-fill hidden input on load if value exists
+		// Initialize value if exists
 		if (phoneInput.value.trim() !== "") {
 			hiddenInput.value = phoneInput.value;
-			// NOTE: intl-tel-input might need setNumber to format correctly
-			// iti.setNumber(phoneInput.value); 
 		}
 
 		const reset = () => {
@@ -46,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		};
 
 		phoneInput.addEventListener('blur', () => {
+			if (phoneInput.disabled) return; // Don't validate in view mode
 			reset();
 			if (phoneInput.value.trim()) {
 				if (iti.isValidNumber()) {
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				} else {
 					phoneInput.classList.add("error");
 					errorMsg.classList.remove("hide");
-					errorMsg.innerHTML = "Invalid Number";
+					errorMsg.innerHTML = "Invalid";
 				}
 			}
 		});
@@ -65,14 +65,36 @@ document.addEventListener("DOMContentLoaded", () => {
 				e.preventDefault();
 				phoneInput.focus();
 				errorMsg.classList.remove("hide");
-				errorMsg.innerHTML = "Valid Phone Required";
+				errorMsg.innerHTML = "Required";
 			} else {
 				hiddenInput.value = iti.getNumber();
 			}
 		});
 	}
 
-	// 3. Modal Logic (Password)
+	// 3. EDIT MODE LOGIC
+	window.enableEditMode = () => {
+		document.getElementById("inpName").disabled = false;
+		document.getElementById("inpEmail").disabled = false;
+		document.getElementById("mobile").disabled = false;
+
+		// Show Actions
+		const actions = document.getElementById("editActions");
+		actions.classList.add("active");
+
+		// Hide Edit Pencil
+		document.getElementById("editTrigger").style.display = "none";
+
+		// Remove 'view-mode' styling class
+		document.querySelector(".profile-form").classList.remove("view-mode");
+	};
+
+	window.cancelEditMode = () => {
+		// Reload page to reset data or manually revert
+		location.reload();
+	};
+
+	// 4. Modal Logic
 	window.openPasswordModal = () => {
 		document.getElementById("passwordModal").classList.add("show");
 		document.getElementById("passwordModal").classList.remove("hidden");
@@ -85,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}, 300);
 	};
 
-	// 4. Global Toast Function
+	// 5. Toast
 	window.showToast = (msg, isError) => {
 		const t = document.getElementById("toast");
 		t.innerHTML = isError

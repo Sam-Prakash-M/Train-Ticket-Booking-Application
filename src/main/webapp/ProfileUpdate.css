@@ -47,7 +47,7 @@ body {
 	overflow-x: hidden;
 }
 
-/* Dynamic Background */
+/* Background */
 .ambient-light-neon {
 	position: fixed;
 	inset: 0;
@@ -72,12 +72,11 @@ opacity
 }
 
 /* --------------------------
-   NAVBAR (Glassmorphism)
+   NAVBAR
 --------------------------- */
 .navbar {
 	background: var(--card);
 	backdrop-filter: blur(20px);
-	-webkit-backdrop-filter: blur(20px);
 	border-bottom: 1px solid var(--border);
 	padding: 0.8rem 2rem;
 	display: flex;
@@ -117,31 +116,44 @@ opacity
 	color: var(--primary);
 }
 
-.nav-menu a.active::after {
-	content: '';
-	position: absolute;
-	bottom: -4px;
-	left: 0;
-	width: 100%;
-	height: 2px;
-	background: var(--primary);
-	border-radius: 2px;
-	box-shadow: 0 0 8px var(--primary);
+.nav-profile {
+	display: flex;
+	align-items: center;
+	gap: 15px;
 }
 
-.icon-btn {
-	background: none;
-	border: none;
-	color: var(--muted);
-	font-size: 1.3rem;
+/* FIXED THEME TOGGLE */
+.theme-btn {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: 1px solid var(--border);
+	background: rgba(255, 255, 255, 0.1);
 	cursor: pointer;
-	transition: 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text);
+	font-size: 1.2rem;
+	transition: 0.3s;
 }
 
-.icon-btn:hover {
-	color: var(--text);
-	transform: rotate(15deg);
+.theme-btn:hover {
+	background: var(--primary);
+	color: white;
+	box-shadow: 0 0 15px var(--primary-glow);
+	transform: rotate(180deg);
 }
+.light-icon { display: block; }
+.dark-icon { display: none; }
+/* Toggle Icons based on theme attribute handled in JS/CSS logic */
+/* 2. Explicit Light Mode (Safety) */
+[data-theme="light"] .light-icon { display: block; }
+[data-theme="light"] .dark-icon { display: none; }
+
+/* 3. Dark Mode Override */
+[data-theme="dark"] .light-icon { display: none; }
+[data-theme="dark"] .dark-icon { display: block; }
 
 .user-btn {
 	background: rgba(255, 255, 255, 0.05);
@@ -152,12 +164,6 @@ opacity
 	align-items: center;
 	gap: 10px;
 	color: var(--text);
-	transition: 0.2s;
-}
-
-.user-btn:hover {
-	border-color: var(--primary);
-	box-shadow: 0 0 10px var(--primary-glow);
 }
 
 .u-avatar {
@@ -205,12 +211,14 @@ to {
 }
 
 }
+
+/* Edit Badge */
 .edit-badge {
 	position: absolute;
 	top: 30px;
 	right: 30px;
-	width: 40px;
-	height: 40px;
+	width: 45px;
+	height: 45px;
 	background: var(--bg);
 	border-radius: 50%;
 	display: grid;
@@ -218,13 +226,16 @@ to {
 	color: var(--primary);
 	border: 1px solid var(--border);
 	cursor: pointer;
+	font-size: 1.2rem;
 	transition: 0.3s;
+	z-index: 10;
 }
 
 .edit-badge:hover {
 	background: var(--primary);
 	color: white;
 	transform: rotate(15deg);
+	box-shadow: 0 5px 15px var(--primary-glow);
 }
 
 .profile-header {
@@ -238,7 +249,7 @@ to {
 	margin: 0 auto 15px;
 	border-radius: 50%;
 	background: linear-gradient(135deg, var(--primary), var(--secondary));
-	padding: 3px; /* Border width */
+	padding: 3px;
 	box-shadow: 0 10px 30px var(--primary-glow);
 }
 
@@ -274,7 +285,7 @@ to {
 	gap: 5px;
 }
 
-/* FORM STYLING */
+/* FORM */
 .form-grid {
 	display: grid;
 	gap: 24px;
@@ -300,10 +311,31 @@ to {
 	overflow: hidden;
 }
 
+/* Edit Mode Styles vs View Mode */
+.profile-form.view-mode .field-box {
+	background: transparent;
+	border-color: transparent;
+}
+
+.profile-form.view-mode .field-box input {
+	color: var(--text);
+	padding-left: 0;
+}
+
+.profile-form.view-mode .field-box .icon {
+	display: none; /* Hide icons in view mode for cleaner look */
+}
+
+.profile-form.view-mode .field-box input:disabled {
+	color: var(--muted);
+	-webkit-text-fill-color: var(--text);
+	opacity: 1; /* Fix for iOS */
+}
+
+/* Active Edit Mode */
 .field-box:focus-within {
 	border-color: var(--primary);
 	box-shadow: 0 0 0 4px var(--primary-glow);
-	transform: translateY(-1px);
 }
 
 .field-box .icon {
@@ -312,10 +344,6 @@ to {
 	color: var(--muted);
 	font-size: 1.2rem;
 	transition: 0.3s;
-}
-
-.field-box:focus-within .icon {
-	color: var(--primary);
 }
 
 .field-box input {
@@ -331,7 +359,7 @@ to {
 	font-family: var(--font-body);
 }
 
-/* Phone Input Fixes */
+/* PHONE INPUT FIXED */
 .phone-box input {
 	padding-left: 90px !important;
 }
@@ -356,17 +384,48 @@ to {
 	color: #f8fafc;
 }
 
-/* Disabled State */
-.input-group.disabled {
-	opacity: 0.7;
+/* VALIDATION MSG FIXED POSITION */
+#valid-msg {
+	position: absolute;
+	right: 15px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 0.8rem;
+	color: var(--success);
+	font-weight: 600;
 	pointer-events: none;
 }
 
-.input-group.disabled .field-box {
-	background: rgba(0, 0, 0, 0.02);
+#error-msg {
+	position: absolute;
+	right: 15px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 0.8rem;
+	color: var(--danger);
+	font-weight: 600;
+	pointer-events: none;
 }
 
-/* SECURITY SECTION */
+.hide {
+	display: none;
+}
+
+/* Hidden Section Animation */
+.hidden-section {
+	display: none;
+	opacity: 0;
+	transform: translateY(10px);
+	transition: 0.3s;
+}
+
+.hidden-section.active {
+	display: block;
+	opacity: 1;
+	transform: translateY(0);
+}
+
+/* Security & Buttons */
 .security-section {
 	margin-top: 30px;
 	padding: 20px;
@@ -411,7 +470,6 @@ to {
 	box-shadow: 0 5px 15px var(--primary-glow);
 }
 
-/* ACTIONS */
 .form-actions {
 	display: flex;
 	justify-content: flex-end;
@@ -451,7 +509,7 @@ to {
 	align-items: center;
 	gap: 10px;
 	box-shadow: 0 8px 20px var(--primary-glow);
-	transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	transition: 0.3s;
 }
 
 .btn-save:hover {
@@ -459,7 +517,7 @@ to {
 	box-shadow: 0 12px 30px var(--primary-glow);
 }
 
-/* MODAL */
+/* Modal & Toast (Same as previous, just ensure z-index) */
 .modal-overlay {
 	position: fixed;
 	inset: 0;
@@ -517,7 +575,6 @@ to {
 	gap: 10px;
 }
 
-/* TOAST */
 .toast {
 	position: fixed;
 	bottom: 40px;
@@ -533,7 +590,7 @@ to {
 	gap: 10px;
 	transform: translateY(100px);
 	opacity: 0;
-	transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	transition: 0.4s;
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 	z-index: 3000;
 	border: 1px solid rgba(255, 255, 255, 0.1);
@@ -550,27 +607,4 @@ to {
 
 .toast.success {
 	border-left: 4px solid var(--success);
-}
-
-/* VALIDATION */
-#valid-msg {
-	position: absolute;
-	right: 15px;
-	top: 18px;
-	font-size: 0.8rem;
-	color: var(--success);
-	font-weight: 600;
-}
-
-#error-msg {
-	position: absolute;
-	right: 15px;
-	top: 18px;
-	font-size: 0.8rem;
-	color: var(--danger);
-	font-weight: 600;
-}
-
-.hide {
-	display: none;
 }
