@@ -619,3 +619,164 @@ to {
 }
 
 /* ... Keep existing Card & Form styles ... */
+
+/* --- PNR Result Card Styles (2026 Neon) --- */
+.pnr-result-box {
+    margin-top: 30px;
+    animation: slideUp 0.4s ease-out;
+}
+
+.ticket-card {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--input-border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+}
+[data-theme="dark"] .ticket-card { background: rgba(30, 41, 59, 0.6); }
+
+.ticket-header {
+    background: linear-gradient(135deg, var(--primary), #4338ca);
+    padding: 20px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.train-name { font-size: 1.1rem; font-weight: 700; display: block; margin-bottom: 4px; }
+.train-num { font-size: 0.9rem; opacity: 0.9; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; }
+.pnr-badge { font-family: monospace; font-size: 1rem; font-weight: 600; letter-spacing: 1px; }
+
+.ticket-body { padding: 20px; }
+
+.route-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+    border-bottom: 1px solid var(--input-border); padding-bottom: 15px;
+}
+.station { font-weight: 600; color: var(--text-main); font-size: 1.1rem; }
+.arrow { color: var(--text-muted); font-size: 1.2rem; }
+
+.pax-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.pax-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); padding-bottom: 8px; }
+.pax-table td { font-size: 0.95rem; padding: 8px 0; color: var(--text-main); border-bottom: 1px solid var(--surface-glass-border); }
+.pax-table tr:last-child td { border-bottom: none; }
+
+/* Status Badges */
+.st-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+.st-cnf { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.st-wl { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.st-can { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+.ticket-footer {
+    background: var(--input-bg);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+.fare-val { font-size: 1.2rem; color: var(--primary); font-weight: 700; }
+
+/* Error Box */
+.error-box {
+    background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444; padding: 20px; border-radius: 12px; text-align: center;
+}
+
+/* Theme Toggle Icons */
+.light-icon { display: block; } .dark-icon { display: none; }
+[data-theme="dark"] .light-icon { display: none; } 
+[data-theme="dark"] .dark-icon { display: block; }
+
+.hidden { display: none !important; }
+
+/* --- FIX: Theme Toggle Icons --- */
+.theme-toggle-btn {
+    position: relative;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--input-border);
+    background: transparent;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: 0.3s;
+}
+.theme-toggle-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: rotate(15deg);
+}
+
+/* Default: Light Mode (Sun visible, Moon hidden) */
+.light-icon { display: block; font-size: 1.2rem; }
+.dark-icon { display: none; font-size: 1.2rem; }
+
+/* Dark Mode Override (Sun hidden, Moon visible) */
+[data-theme="dark"] .light-icon { display: none; }
+[data-theme="dark"] .dark-icon { display: block; }
+
+
+/* --- PNR Result Card (2026 Style) --- */
+.pnr-result-box { margin-top: 30px; animation: slideUp 0.4s ease-out; }
+
+.ticket-card {
+    background: var(--surface-glass);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+}
+
+/* Header Gradient */
+.ticket-header {
+    background: linear-gradient(135deg, var(--primary), #4338ca);
+    padding: 25px; color: white;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.train-name { font-size: 1.2rem; font-weight: 700; display: block; margin-bottom: 4px; }
+.train-num { font-size: 0.9rem; opacity: 0.9; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; }
+.pnr-badge { font-family: monospace; font-size: 1rem; font-weight: 600; letter-spacing: 1px; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 8px; }
+
+/* Status Banner */
+.status-banner {
+    padding: 10px 25px; font-size: 0.9rem; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+}
+.banner-live { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.banner-flushed { background: rgba(100, 116, 139, 0.15); color: var(--text-muted); }
+
+.ticket-body { padding: 25px; }
+
+/* Route Row */
+.route-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+    border-bottom: 1px solid var(--input-border); padding-bottom: 15px;
+}
+.station { font-weight: 700; color: var(--text-main); font-size: 1.1rem; }
+.arrow { color: var(--text-muted); font-size: 1.2rem; }
+
+/* Passengers Table */
+.pax-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.pax-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); padding-bottom: 10px; }
+.pax-table td { font-size: 0.95rem; padding: 10px 0; color: var(--text-main); border-bottom: 1px solid var(--surface-glass-border); }
+.pax-table tr:last-child td { border-bottom: none; }
+
+/* Badges */
+.st-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+.st-cnf { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.st-wl { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.st-can { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+.ticket-footer {
+    background: var(--input-bg); padding: 15px 25px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.9rem; color: var(--text-muted); border-top: 1px solid var(--input-border);
+}
+.fare-val { font-size: 1.2rem; color: var(--primary); font-weight: 700; }
+
+.error-box {
+    background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444; padding: 20px; border-radius: 12px; text-align: center; margin-top: 20px;
+}
+.hidden { display: none !important; }

@@ -1,9 +1,11 @@
 package com.samprakash.pnrview;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
+import com.google.gson.Gson;
 import com.samprakash.pnrviewmodel.PnrStatusViewModel;
 import com.samprakash.ticketbookmodel.Ticket;
 
@@ -20,9 +22,49 @@ public class PnrStatusView extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-        // Just load the page initially
-        forwardToPage(request, response);
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        
+        // 1. Get Parameter from the AJAX request
+        String pnrNumber = request.getParameter("pnr"); // Matches <input name="pnr">
+
+        // 2. Check if it's an AJAX request
+        boolean isAjax = "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+
+        if (isAjax) {
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            PrintWriter out = response.getWriter();
+            Gson gson = new Gson();
+
+            if (pnrNumber == null || pnrNumber.trim().isEmpty()) {
+                out.print("{\"status\":\"error\", \"message\":\"PNR Number is required.\"}");
+                return;
+            }
+
+            Ticket ticket = PnrStatusViewModel.getBookingDetails(pnrNumber);
+
+            if (ticket != null) {
+                // Determine Status (Live vs Flushed)
+                String pnrStatus = "LIVE";
+                try {
+                    LocalDate journeyDate = LocalDate.parse(ticket.getBookingDate());
+                    if (journeyDate.isBefore(LocalDate.now())) {
+                        pnrStatus = "FLUSHED";
+                    }
+                } catch (Exception e) { /* Ignore date parse errors */ }
+
+                // Construct JSON manually to add the extra 'pnrStatus' field alongside the ticket object
+                // Alternatively, use a wrapper class. Here we just inject the property.
+                String ticketJson = gson.toJson(ticket);
+                String jsonResponse = String.format("{\"status\":\"success\", \"pnrStatus\":\"%s\", \"data\":%s}", pnrStatus, ticketJson);
+                out.print(jsonResponse);
+            } else {
+                out.print("{\"status\":\"error\", \"message\":\"Invalid PNR Number. Please check and try again.\"}");
+            }
+            out.flush();
+        } else {
+        	forwardToPage(request, response);
+        }
     }
 
     @Override

@@ -1,7 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
 <%
-// Session Logic for Header
+// Session Logic
 String userName = (String) session.getAttribute("user_name");
 boolean isLoggedIn = (userName != null);
 String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase() : "U";
@@ -26,7 +26,7 @@ String maxDateFormatted = maxDate.toString();
 	href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<link rel="stylesheet" href="ticketsearch.css?v=2025_HEADER">
+<link rel="stylesheet" href="ticketsearch.css?v=2026_FIXED">
 <link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
@@ -34,7 +34,7 @@ String maxDateFormatted = maxDate.toString();
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="ticketsearch.js?v=2025_HEADER"></script>
+<script defer src="ticketsearch.js?v=2026_FIXED"></script>
 </head>
 <body>
 
@@ -62,14 +62,16 @@ String maxDateFormatted = maxDate.toString();
 
 			<div class="nav-menu">
 				<a href="#" class="active"><i class="ri-home-5-line"></i> Home</a> <a
-					href="#pnr-status"><i class="ri-qr-code-line"></i> PNR Status</a> <a
-					href="#chart-vacancy"><i class="ri-bar-chart-horizontal-line"></i>
-					Charts</a>
+					href="#pnr-status" onclick="switchTab('pnr-status')"><i
+					class="ri-qr-code-line"></i> PNR Status</a> <a href="#chart-vacancy"
+					onclick="switchTab('chart-vacancy')"><i
+					class="ri-bar-chart-horizontal-line"></i> Charts</a>
 			</div>
 
 			<div class="nav-profile">
-				<button id="themeToggle" class="icon-btn">
-					<i class="ri-moon-line"></i>
+				<button id="themeToggle" class="icon-btn theme-toggle-btn">
+					<i class="ri-sun-line light-icon"></i> <i
+						class="ri-moon-line dark-icon"></i>
 				</button>
 
 				<%
@@ -86,12 +88,12 @@ String maxDateFormatted = maxDate.toString();
 								class="ri-checkbox-circle-fill success-icon"></i></small>
 						</div>
 						<div class="divider"></div>
-						<a href="ProfileUpdate"><i class="ri-user-line"></i> My Profile</a>
-						<a href="TransactionList"><i class="ri-exchange-dollar-line"></i>
-							My Transactions</a> <a href="MyBookings"><i
-							class="ri-history-line"></i> Booked Ticket History</a> <a
-							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket
-							Refund History</a>
+						<a href="ProfileUpdate"><i class="ri-user-line"></i> My
+							Profile</a> <a href="TransactionList"><i
+							class="ri-exchange-dollar-line"></i> My Transactions</a> <a
+							href="MyBookings"><i class="ri-history-line"></i> Booked
+							Ticket History</a> <a href="refunds.jsp"><i
+							class="ri-refund-2-line"></i> Ticket Refund History</a>
 						<div class="divider"></div>
 						<a href="logout" class="danger"><i class="ri-logout-box-line"></i>
 							Logout</a>
@@ -129,18 +131,15 @@ String maxDateFormatted = maxDate.toString();
 					</div>
 
 					<form action="SearchServlet" method="get" class="modern-form">
-
 						<div class="route-grid">
 							<div class="input-wrap">
 								<i class="ri-map-pin-line icon"></i> <input type="text"
 									id="source" name="fromStation" placeholder="Source Station"
 									required autocomplete="off"> <label>From</label>
 							</div>
-
 							<button type="button" id="swapStations" class="swap-btn">
 								<i class="ri-arrow-left-right-line"></i>
 							</button>
-
 							<div class="input-wrap">
 								<i class="ri-map-pin-range-line icon"></i> <input type="text"
 									id="destination" name="toStation"
@@ -156,7 +155,6 @@ String maxDateFormatted = maxDate.toString();
 									data-min="<%=todayFormatted%>" data-max="<%=maxDateFormatted%>"
 									placeholder="Select Date"> <label>Date</label>
 							</div>
-
 							<div class="input-wrap">
 								<i class="ri-armchair-line icon"></i> <select name="trainClass"
 									required>
@@ -168,7 +166,6 @@ String maxDateFormatted = maxDate.toString();
 									<option value="2S">Second Sitting (2S)</option>
 								</select> <label>Class</label>
 							</div>
-
 							<div class="input-wrap">
 								<i class="ri-vip-crown-line icon"></i> <select name="quota"
 									required>
@@ -192,15 +189,20 @@ String maxDateFormatted = maxDate.toString();
 						<h2>Check PNR Status</h2>
 						<p>Enter your 10-digit PNR number to check live status.</p>
 					</div>
-					<form action="PNRServlet" method="get" class="modern-form">
+
+					<form id="pnrForm" class="modern-form" onsubmit="return false;">
 						<div class="input-wrap">
-							<i class="ri-hashtag icon"></i> <input type="text" name="pnr"
-								maxlength="10" placeholder="e.g. 4251234567" required> <label>PNR
-								Number</label>
+							<i class="ri-hashtag icon"></i> <input type="text" id="pnrInput"
+								name="pnr" maxlength="50" placeholder="e.g. 4251234567" required
+								autocomplete="off"> <label>PNR Number</label>
 						</div>
 						<button type="submit" class="btn btn-primary btn-full">
-							Check Status</button>
+							<span id="pnrBtnText">Check Status</span> <i
+								class="ri-loader-4-line ri-spin hidden" id="pnrLoader"></i>
+						</button>
 					</form>
+
+					<div id="pnrResultContainer" class="pnr-result-box hidden"></div>
 				</section>
 
 				<section id="chart-vacancy" class="tab-content">
@@ -222,8 +224,8 @@ String maxDateFormatted = maxDate.toString();
 									Date</label>
 							</div>
 						</div>
-						<button type="submit" class="btn btn-primary btn-full">
-							Get Charts</button>
+						<button type="submit" class="btn btn-primary btn-full">Get
+							Charts</button>
 					</form>
 				</section>
 
