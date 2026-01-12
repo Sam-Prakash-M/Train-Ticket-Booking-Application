@@ -20,7 +20,7 @@ String errorMessage = (exception != null) ? exception.getMessage() : "Unknown Se
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="error_500_page.css?v=2025">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/error_500_page.css?v=2025">
 <link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
@@ -28,7 +28,7 @@ String errorMessage = (exception != null) ? exception.getMessage() : "Unknown Se
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="error_500_page.js?v=2025"></script>
+<script defer src="${pageContext.request.contextPath}/error_500_page.js?v=2025"></script>
 </head>
 <body>
 

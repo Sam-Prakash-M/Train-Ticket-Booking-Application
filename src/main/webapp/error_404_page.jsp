@@ -16,7 +16,7 @@ String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="error_404_page.css?v=2025_HEADER">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/error_404_page.css?v=2025_HEADER">
 <link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
@@ -24,7 +24,7 @@ String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="error_404_page.js?v=2025"></script>
+<script defer src="${pageContext.request.contextPath}/error_404_page.js?v=2025"></script>
 </head>
 <body>
 
