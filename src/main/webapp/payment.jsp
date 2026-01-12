@@ -85,7 +85,7 @@ String[] berths = (String[]) request.getAttribute("berths");
 						</div>
 						<div class="divider"></div>
 						<a href="ProfileUpdate"><i class="ri-user-line"></i> My Profile</a>
-						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
+						<a href="TransactionList"><i class="ri-exchange-dollar-line"></i>
 							My Transactions</a> <a href="MyBookings"><i
 							class="ri-history-line"></i> Booked Ticket History</a> <a
 							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket

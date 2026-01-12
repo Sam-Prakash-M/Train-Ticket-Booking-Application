@@ -104,7 +104,7 @@
 
 						<a href="ProfileUpdate" class="menu-item"> <i
 							class="ri-profile-line"></i> My Profile
-						</a> <a href="transactions.jsp" class="menu-item"> <i
+						</a> <a href="TransactionList" class="menu-item"> <i
 							class="ri-exchange-dollar-line"></i> My Transactions
 						</a> <a href="MyBookings" class="menu-item"> <i
 							class="ri-history-line"></i> Booked Ticket History
