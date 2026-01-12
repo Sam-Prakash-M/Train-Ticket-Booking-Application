@@ -17,8 +17,7 @@ String userInitial = String.valueOf(userName.charAt(0)).toUpperCase();
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="icon" type="image/png"
-	href="https://cdn-icons-png.flaticon.com/512/1036/1036137.png">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 <link rel="stylesheet" href="TransactionView.css?v=2026_FINAL">
 
 <script>
