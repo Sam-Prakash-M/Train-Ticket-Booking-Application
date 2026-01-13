@@ -61,7 +61,7 @@ java.time.LocalDate maxDate = today.plusDays(90);
 			</div>
 
 			<div class="nav-links desktop-only">
-				<a href="#" class="active">Home</a> <a href="trains.jsp">Trains</a>
+				<a href="#" class="active">Home</a> <a href="TrainData">Trains</a>
 				<a href="PnrStatus">PNR Status</a> <a href="charts.jsp">Charts</a>
 			</div>
 

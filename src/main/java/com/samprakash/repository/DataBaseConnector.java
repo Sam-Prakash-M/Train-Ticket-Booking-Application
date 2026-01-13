@@ -20,6 +20,7 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -42,6 +43,7 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import com.samprakash.basemodel.Status;
 import com.samprakash.basemodel.TrainBookingDatabase;
+import com.samprakash.basemodel.TrainCollection;
 import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
@@ -57,6 +59,10 @@ import com.samprakash.ticketbookmodel.PassengerCollection;
 import com.samprakash.ticketbookmodel.SeatMetaData;
 import com.samprakash.ticketbookmodel.Ticket;
 import com.samprakash.ticketbookmodel.TicketStatus;
+import com.samprakash.trainmodel.ClassType;
+import com.samprakash.trainmodel.FareAmount;
+import com.samprakash.trainmodel.Routes;
+import com.samprakash.trainmodel.TrainData;
 
 public class DataBaseConnector {
 
@@ -894,14 +900,12 @@ public class DataBaseConnector {
 								autoUpgrade);
 
 						passenger.setTicketStatus(currentStatus);
-						
-						if(!currentStatus.equals("CAN")) {
+
+						if (!currentStatus.equals("CAN")) {
 							SeatMetaData seat = new SeatMetaData(classType, coachNo,
 									Byte.parseByte(currentStatus.split("/")[1]));
 							passenger.setSeatMetaData(seat);
 						}
-
-						
 
 						associatedPassenger.add(passenger);
 					}
@@ -1713,6 +1717,95 @@ public class DataBaseConnector {
 		return transactionList;
 	}
 
+	public String getTrainId(String trainNameOrId) {
 
+		String trainId = null;
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> trainCollection = trainDatabase.getCollection(TrainBookingDatabase.TRAINS.name());
+
+			Document trainData = trainCollection.find(Filters.eq(TrainCollection.train_id.name(), trainNameOrId))
+					.first();
+
+			if (trainData != null) {
+
+				return trainData.getString(TrainCollection.train_id.name());
+			}
+
+			trainData = trainCollection.find(Filters.eq(TrainCollection.train_name.name(), trainNameOrId)).first();
+
+			if (trainData != null) {
+
+				return trainData.getString(TrainCollection.train_id.name());
+			}
+
+		}
+		return trainId;
+	}
+
+	public TrainData getTrainFullDetails(String trainId) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> trainScheduleCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.TRAIN_SCHEDULE.name());
+
+			Document trainDetails = trainScheduleCollection.find(Filters.eq(TRAIN_ID, trainId)).first();
+			System.out.println("train id : "+trainId);
+			String traiName = getTraiNamebyId(trainId);
+			Document fareKm = trainDetails.get("fare_per_km", Document.class);
+
+			double secondSittingFare = (double)fareKm.getOrDefault(ClassType.S2.name(),0d);
+			double sleeperFare = (double)fareKm.getOrDefault(ClassType.SL.name(),0d);
+			double thirdACFare = (double)fareKm.getOrDefault("3A",0d);
+			double secondAcFare = (double)fareKm.getOrDefault("2A",0d);
+			double firstAcFare = (double)fareKm.getOrDefault("1A",0d);
+			double ccFare = (double)fareKm.getOrDefault(ClassType.CC.name(),0d);
+			double ecFare = (double)fareKm.getOrDefault(ClassType.EC.name(),0d);
+
+			FareAmount fareAmoutAllClass = new FareAmount(secondSittingFare, sleeperFare, thirdACFare, secondAcFare,
+					firstAcFare, ccFare, ecFare);
+
+			List<Document> routesArray = trainDetails.getList("routes", Document.class, new ArrayList<>());
+
+			Set<Routes> routesDetails = new TreeSet<>();
+
+			for (Document route : routesArray) {
+
+				String station = route.getString("station");
+				String arrival = route.getString("arrival");
+				String departure = route.getString("departure");
+				int distanceFromStart = route.getInteger("distance_from_start");
+
+				Routes currStationRoute = new Routes(station, arrival, departure, distanceFromStart);
+				routesDetails.add(currStationRoute);
+			}
+
+			List<String> availableDays = trainDetails.getList("available_days", String.class, new ArrayList<>());
+
+			return new TrainData(trainId, traiName, fareAmoutAllClass, routesDetails, availableDays);
+
+		}
+
+	}
+
+	private String getTraiNamebyId(String trainId) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> trainsCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.TRAINS.name());
+
+			return trainsCollection.find(Filters.eq(TRAIN_ID, trainId)).first().getString(TRAIN_NAME);
+
+		}
+
+	}
 
 }
