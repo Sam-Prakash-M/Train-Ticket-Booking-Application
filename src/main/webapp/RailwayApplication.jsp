@@ -253,8 +253,7 @@ java.time.LocalDate maxDate = today.plusDays(90);
         window.__CONFIG = {
             loggedIn: <%=loggedIn%>,
             minDate: "<%=today%>",
-            maxDate: "<%=maxDate%>
-		"
+            maxDate: "<%=maxDate%>"
 		};
 	</script>
 
