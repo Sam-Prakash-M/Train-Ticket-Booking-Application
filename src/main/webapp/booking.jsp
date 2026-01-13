@@ -74,7 +74,7 @@
 			<div class="nav-links">
 				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
 					Home</a> <a href="#" class="active"><i class="ri-train-line"></i>
-					Trains</a> <a href="pnrstatus.jsp"><i class="ri-qr-code-line"></i>
+					Trains</a> <a href="PnrStatus"><i class="ri-qr-code-line"></i>
 					PNR Status</a> <a href="charts.jsp"><i
 					class="ri-bar-chart-horizontal-line"></i> Charts</a>
 			</div>
