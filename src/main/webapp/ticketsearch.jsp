@@ -26,9 +26,7 @@ String maxDateFormatted = maxDate.toString();
 	rel="stylesheet">
 <link rel="stylesheet"
 	href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="icon" type="image/png"
-	href="https://cdn-icons-png.flaticon.com/512/1036/1036137.png">
-
+<link rel="icon" type="image/png" href="train_logo_all.png">
 <style>
 /* Default Variables for Loader */
 :root {

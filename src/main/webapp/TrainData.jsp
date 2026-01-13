@@ -16,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="TrainData.css?v=2026">
-<link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1036/1036137.png">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
     const savedTheme = localStorage.getItem('sam_theme') || 'light';
