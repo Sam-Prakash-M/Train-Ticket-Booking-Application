@@ -1,6 +1,9 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
 <%
+response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+response.setHeader("Pragma", "no-cache");
+response.setDateHeader("Expires", 0);
 String userName = (String) session.getAttribute("user_name");
 boolean isLoggedIn = (userName != null);
 String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase() : "U";
@@ -103,16 +106,25 @@ keyframes loadSlide { 0% {
 	left: -40%;
 }
 100
+
+
 %
 {
 left
+
+
 :
-100%;
+
+
+100
+%;
+
+
 }
 }
 </style>
 
-<link rel="stylesheet" href="ticketsearch.css?v=2026_FINAL">
+<link rel="stylesheet" href="ticketsearch.css?v=2026_2">
 
 <script>
 	// Apply theme immediately to avoid white flash in dark mode
@@ -186,7 +198,10 @@ left
 				<%
 				} else {
 				%>
-				<a href="login.jsp" class="btn-login">Log In</a>
+				<div class="auth-buttons">
+					<a href="login.jsp" class="btn-login">Log In</a> <a
+						href="register.jsp" class="btn-signup">Sign Up</a>
+				</div>
 				<%
 				}
 				%>

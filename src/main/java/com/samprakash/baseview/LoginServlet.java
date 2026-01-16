@@ -23,23 +23,23 @@ public class LoginServlet extends HttpServlet {
 	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 
-		String userName = request.getParameter("username");
-		String password = request.getParameter("password");
-		
-		
-		HttpSession httpSession = request.getSession(true);
-		httpSession.setAttribute("user_name", userName); 
-		httpSession.setMaxInactiveInterval(600);
-
 		try {
+			String userName = request.getParameter("username");
+			String password = request.getParameter("password");
+
+			if (userName == null || password == null) {
+				RequestDispatcher requestDispatcher = request.getRequestDispatcher("login.jsp?error=loggedOut");
+
+				requestDispatcher.forward(request, response);
+			}
 
 			DataBaseConnector dataBaseConnector = DataBaseConnector.getInstance();
 
 			if (dataBaseConnector.isUserCredentialIsCorrect(userName, password)) {
-
-				RequestDispatcher requestDispatcher = request.getRequestDispatcher("ticketsearch.jsp");
-
-				requestDispatcher.forward(request, response);
+				HttpSession httpSession = request.getSession(true);
+				httpSession.setAttribute("user_name", userName);
+				httpSession.setMaxInactiveInterval(600);
+				response.sendRedirect("ticketsearch.jsp");
 
 			} else {
 
