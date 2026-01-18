@@ -86,8 +86,8 @@
                     </div>
 
                     <div class="forgot-links">
-                        <a href="forgot_username.jsp">Forgot Username?</a>
-                        <a href="forgot_password.jsp">Forgot Password?</a>
+                        <a href="forgotUsername.jsp">Forgot Username?</a>
+                        <a href="forgotPassword.jsp">Forgot Password?</a>
                     </div>
 
                     <button type="submit" class="btn-login">

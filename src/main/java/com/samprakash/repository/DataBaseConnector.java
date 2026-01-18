@@ -1756,17 +1756,17 @@ public class DataBaseConnector {
 					.getCollection(TrainBookingDatabase.TRAIN_SCHEDULE.name());
 
 			Document trainDetails = trainScheduleCollection.find(Filters.eq(TRAIN_ID, trainId)).first();
-			System.out.println("train id : "+trainId);
+			System.out.println("train id : " + trainId);
 			String traiName = getTraiNamebyId(trainId);
 			Document fareKm = trainDetails.get("fare_per_km", Document.class);
 
-			double secondSittingFare = (double)fareKm.getOrDefault(ClassType.S2.name(),0d);
-			double sleeperFare = (double)fareKm.getOrDefault(ClassType.SL.name(),0d);
-			double thirdACFare = (double)fareKm.getOrDefault("3A",0d);
-			double secondAcFare = (double)fareKm.getOrDefault("2A",0d);
-			double firstAcFare = (double)fareKm.getOrDefault("1A",0d);
-			double ccFare = (double)fareKm.getOrDefault(ClassType.CC.name(),0d);
-			double ecFare = (double)fareKm.getOrDefault(ClassType.EC.name(),0d);
+			double secondSittingFare = (double) fareKm.getOrDefault(ClassType.S2.name(), 0d);
+			double sleeperFare = (double) fareKm.getOrDefault(ClassType.SL.name(), 0d);
+			double thirdACFare = (double) fareKm.getOrDefault("3A", 0d);
+			double secondAcFare = (double) fareKm.getOrDefault("2A", 0d);
+			double firstAcFare = (double) fareKm.getOrDefault("1A", 0d);
+			double ccFare = (double) fareKm.getOrDefault(ClassType.CC.name(), 0d);
+			double ecFare = (double) fareKm.getOrDefault(ClassType.EC.name(), 0d);
 
 			FareAmount fareAmoutAllClass = new FareAmount(secondSittingFare, sleeperFare, thirdACFare, secondAcFare,
 					firstAcFare, ccFare, ecFare);
@@ -1804,6 +1804,25 @@ public class DataBaseConnector {
 
 			return trainsCollection.find(Filters.eq(TRAIN_ID, trainId)).first().getString(TRAIN_NAME);
 
+		}
+
+	}
+
+	public String getUserNameByEmailId(String emailId) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> users = db.getCollection(TrainBookingDatabase.USERS.name());
+
+			// 1️⃣ Fetch existing user
+			Document existingUser = users.find(Filters.eq(UserCollection.EMAIL.name(), emailId)).first();
+
+			if (existingUser != null) {
+				return null;
+			}
+
+			return existingUser.getString(UserCollection.USER_NAME.name());
 		}
 
 	}
