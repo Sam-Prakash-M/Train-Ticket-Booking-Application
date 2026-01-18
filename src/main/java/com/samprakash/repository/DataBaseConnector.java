@@ -3,11 +3,15 @@ package com.samprakash.repository;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +20,7 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -33,21 +38,31 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import com.samprakash.basemodel.Status;
 import com.samprakash.basemodel.TrainBookingDatabase;
+import com.samprakash.basemodel.TrainCollection;
 import com.samprakash.basemodel.UserCollection;
 import com.samprakash.basemodel.Users;
 import com.samprakash.baseviewmodel.Hashing;
 import com.samprakash.exception.SeatNotAvailableException;
 import com.samprakash.paymentmodel.Passenger;
+import com.samprakash.paymentmodel.PaymentsCollection;
+import com.samprakash.paymentmodel.TransactionPurpose;
+import com.samprakash.paymentview.PaymentGateway;
+import com.samprakash.profilemodel.TransactionData;
 import com.samprakash.ticketbookmodel.BookingData;
 import com.samprakash.ticketbookmodel.BookingState;
 import com.samprakash.ticketbookmodel.PassengerCollection;
 import com.samprakash.ticketbookmodel.SeatMetaData;
 import com.samprakash.ticketbookmodel.Ticket;
 import com.samprakash.ticketbookmodel.TicketStatus;
+import com.samprakash.trainmodel.ClassType;
+import com.samprakash.trainmodel.FareAmount;
+import com.samprakash.trainmodel.Routes;
+import com.samprakash.trainmodel.TrainData;
 
 public class DataBaseConnector {
 
@@ -104,16 +119,29 @@ public class DataBaseConnector {
 
 	}
 
-	public boolean addUser(Users newUser) {
+	public Status addUser(Users newUser) {
 
+		Status addStatus = Status.FAILURE;
 		if (newUser == null) {
 			System.out.println("Provided User Object is Null");
-			return false;
+			return addStatus;
 		}
 
 		if (isUserAlreadyExist(newUser.userName())) {
 			System.out.println("User Already Exist");
-			return false;
+			addStatus = Status.ALREADY_EXIST;
+			return addStatus;
+		}
+
+		if (isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.email(), UserCollection.EMAIL)) {
+			addStatus = Status.EMAIL_ID_ALREADY_USED;
+			return addStatus;
+		}
+
+		if (isPropertyValueAlreadyUsedByAnotherUser(newUser.userName(), newUser.contactNo(),
+				UserCollection.CONTACT_NO)) {
+			addStatus = Status.CONTACT_NO_ALREADY_USED;
+			return addStatus;
 		}
 
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
@@ -130,9 +158,11 @@ public class DataBaseConnector {
 					.append(UserCollection.HASHED_PASSWORD.name(), newUser.hashedPassword());
 
 			allUserDocument.insertOne(newUserDocument);
+
+			addStatus = Status.SUCCESS;
 		}
 
-		return true;
+		return addStatus;
 
 	}
 
@@ -871,9 +901,11 @@ public class DataBaseConnector {
 
 						passenger.setTicketStatus(currentStatus);
 
-						SeatMetaData seat = new SeatMetaData(classType, coachNo,
-								Byte.parseByte(currentStatus.split("/")[1]));
-						passenger.setSeatMetaData(seat);
+						if (!currentStatus.equals("CAN")) {
+							SeatMetaData seat = new SeatMetaData(classType, coachNo,
+									Byte.parseByte(currentStatus.split("/")[1]));
+							passenger.setSeatMetaData(seat);
+						}
 
 						associatedPassenger.add(passenger);
 					}
@@ -1404,8 +1436,9 @@ public class DataBaseConnector {
 
 	}
 
-	public boolean isPasswordSameAsAnyOfLastThreeOldPasswords(String userName, String hashedPassword) {
+	public Status updatePasswordForUserInDb(String userName, String currentPasswordPlain, String newPasswordPlain) {
 
+		Status updateStatus = Status.FAILURE;
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
 
 			MongoDatabase trainBookingDatabase = mongoClient
@@ -1422,21 +1455,31 @@ public class DataBaseConnector {
 
 			String previousHashedPassword3fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_3.name());
 
-			if (hashedPassword.equals(latestHashedPasswordfromDB)
-					|| hashedPassword.equals(previousHashedPassword2fromDB)
-					|| hashedPassword.equals(previousHashedPassword3fromDB)) {
+			System.out.println("Current Password Hashed In DB : " + latestHashedPasswordfromDB);
+			System.out.println("Current Password Entered From Form  : " + currentPasswordPlain);
+
+			if (!Hashing.isPlainPasswordMatchedWithHashedPassword(currentPasswordPlain, latestHashedPasswordfromDB)) {
+
+				return Status.CURRENT_PASSWORD_MISMATCHED;
+			}
+			if (Hashing.isPlainPasswordMatchedWithHashedPassword(newPasswordPlain, latestHashedPasswordfromDB)
+					|| Hashing.isPlainPasswordMatchedWithHashedPassword(newPasswordPlain, previousHashedPassword2fromDB)
+					|| Hashing.isPlainPasswordMatchedWithHashedPassword(newPasswordPlain,
+							previousHashedPassword3fromDB)) {
 
 				System.out.println("You can't Use Password which was used in last 3 time");
+				updateStatus = Status.OLD_PASSWORD_REUSED;
 			} else {
-				return true;
+				updatePassword(userName, newPasswordPlain);
+				updateStatus = Status.SUCCESS;
 			}
 
 		}
 
-		return false;
+		return updateStatus;
 	}
 
-	public void updatePassword(String userName, String hashedPassword) {
+	public void updatePassword(String userName, String newPasswordPlain) {
 
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL, ""))) {
 
@@ -1446,12 +1489,14 @@ public class DataBaseConnector {
 			MongoCollection<Document> userCollection = trainBookingDatabase
 					.getCollection(TrainBookingDatabase.USERS.name());
 
+			String newPasswordHashed = Hashing.getHashedPassword(newPasswordPlain);
+
 			Document userDocument = userCollection.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
 
 			String latestHashedPasswordfromDB = userDocument.getString(UserCollection.HASHED_PASSWORD.name());
 			String previousHashedPassword2fromDB = userDocument.getString(UserCollection.HASHED_PASSWORD_2.name());
 
-			Document updateFields = new Document().append(UserCollection.HASHED_PASSWORD.name(), hashedPassword)
+			Document updateFields = new Document().append(UserCollection.HASHED_PASSWORD.name(), newPasswordHashed)
 					.append(UserCollection.HASHED_PASSWORD_2.name(), latestHashedPasswordfromDB)
 					.append(UserCollection.HASHED_PASSWORD_3.name(), previousHashedPassword2fromDB);
 
@@ -1463,9 +1508,9 @@ public class DataBaseConnector {
 
 	}
 
-	public boolean updatePassengerDetails(String userName, String fullName, String email, String contactNo) {
+	public Status updatePassengerDetails(String userName, String fullName, String email, String contactNo) {
 
-		boolean updateStatus = false;
+		Status updateStatus = Status.FAILURE;
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
 
 			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
@@ -1493,6 +1538,7 @@ public class DataBaseConnector {
 			// 3️⃣ If nothing changed
 			if (updateFields.isEmpty()) {
 
+				updateStatus = Status.EMPTY_CHANGES;
 				return updateStatus;
 			}
 
@@ -1500,13 +1546,285 @@ public class DataBaseConnector {
 			UpdateResult result = users.updateOne(Filters.eq(UserCollection.USER_NAME.name(), userName),
 					new Document("$set", updateFields));
 
-			updateStatus = result.getModifiedCount() != 0;
+			if (result.getModifiedCount() != 0) {
+				updateStatus = Status.SUCCESS;
+			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
 
 		}
 		return updateStatus;
+	}
+
+	public Users getUserDetails(String userName) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> users = db.getCollection(TrainBookingDatabase.USERS.name());
+
+			// 1️⃣ Fetch existing user
+			Document existingUser = users.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
+
+			if (existingUser == null) {
+				return null;
+			}
+
+			String fullName = existingUser.getString(UserCollection.FULL_NAME.name());
+
+			String hashedPassword = existingUser.getString(UserCollection.HASHED_PASSWORD.name());
+
+			String email = existingUser.getString(UserCollection.EMAIL.name());
+
+			String contactNo = existingUser.getString(UserCollection.CONTACT_NO.name());
+			System.out.println("User Object Retrieved");
+			return new Users(fullName, email, contactNo, userName, hashedPassword);
+		}
+
+	}
+
+	public boolean isPropertyValueAlreadyUsedByAnotherUser(String userName, String propertyValue,
+			UserCollection property) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> usersCollection = db.getCollection(TrainBookingDatabase.USERS.name());
+
+			FindIterable<Document> allUsers = usersCollection
+					.find(Filters.ne(UserCollection.USER_NAME.name(), userName));
+
+			for (Document user : allUsers) {
+
+				String propertyValueOfCurrentUser = user.getString(property.name());
+
+				if (propertyValueOfCurrentUser.equals(propertyValue)) {
+					return true;
+				}
+			}
+
+		}
+
+		return false;
+	}
+
+	public void storeTransactionStatusInDb(Double totalAmount, String transactionId, String userName,
+			String transactionStatus, String transactionPurpose, String paymentGateway) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> paymentCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.PAYMENTS.name());
+
+			Document newTransaction = new Document(PaymentsCollection.USER_NAME.name(), userName)
+					.append(PaymentsCollection.TRASACTION_DATE.name(), Instant.now())
+					.append(PaymentsCollection.TOTAL_AMOUNT.name(), totalAmount)
+					.append(PaymentsCollection.TRANSACTION_ID.name(), transactionId)
+					.append(PaymentsCollection.TRANSACTION_STATUS.name(), transactionStatus)
+					.append(PaymentsCollection.TRANSACTION_PURPOSE.name(), transactionPurpose)
+					.append(PaymentsCollection.PAYMENT_GATEWAY.name(), paymentGateway);
+
+			paymentCollection.insertOne(newTransaction);
+
+		}
+
+	}
+
+	public List<TransactionData> getCurrentUserTransactionList(String userName) {
+		List<TransactionData> transactionList = new LinkedList<>();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MMMM dd EEE HH:mm:ss");
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> paymentsCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.PAYMENTS.name());
+
+			FindIterable<Document> usersTransactionDocument = paymentsCollection
+					.find(Filters.eq(PaymentsCollection.USER_NAME.name(), userName));
+
+			for (Document transaction : usersTransactionDocument) {
+
+				String transactionId = transaction.getString(PaymentsCollection.TRANSACTION_ID.name());
+
+				Date date = transaction.getDate(PaymentsCollection.TRASACTION_DATE.name());
+
+				LocalDateTime ldt = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+				String transactionDate = ldt.format(formatter);
+
+				String transactionStatus = transaction.getString(PaymentsCollection.TRANSACTION_STATUS.name());
+				String transactionPurpose = transaction.getString(PaymentsCollection.TRANSACTION_PURPOSE.name());
+
+				String paymentGateWay = transaction.getString(PaymentsCollection.PAYMENT_GATEWAY.name());
+
+				double totalAmount = transaction.getDouble(PaymentsCollection.TOTAL_AMOUNT.name());
+
+				TransactionData transactionDocument = new TransactionData(userName, totalAmount, transactionDate,
+						transactionId, Status.valueOf(transactionStatus),
+						TransactionPurpose.valueOf(transactionPurpose), PaymentGateway.valueOf(paymentGateWay));
+				transactionList.add(transactionDocument);
+
+			}
+
+		}
+
+		return transactionList;
+	}
+
+	public List<TransactionData> getCurrentUserTransactionList(String userName, int offset, int pageSize) {
+
+		List<TransactionData> transactionList = new LinkedList<>();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MMMM dd EEE HH:mm:ss");
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> paymentsCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.PAYMENTS.name());
+
+			// 1. Create the query
+			FindIterable<Document> usersTransactionDocument = paymentsCollection
+					.find(Filters.eq(PaymentsCollection.USER_NAME.name(), userName))
+					// 2. SORT: Newest transactions first (Essential for consistent pagination)
+					.sort(Sorts.descending(PaymentsCollection.TRASACTION_DATE.name()))
+					// 3. SKIP: The number of records to jump over (offset)
+					.skip(offset)
+					// 4. LIMIT: The max number of records to return (pageSize)
+					.limit(pageSize);
+
+			for (Document transaction : usersTransactionDocument) {
+
+				String transactionId = transaction.getString(PaymentsCollection.TRANSACTION_ID.name());
+				Date date = transaction.getDate(PaymentsCollection.TRASACTION_DATE.name());
+
+				LocalDateTime ldt = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+				String transactionDate = ldt.format(formatter);
+				String transactionStatus = transaction.getString(PaymentsCollection.TRANSACTION_STATUS.name());
+				String transactionPurpose = transaction.getString(PaymentsCollection.TRANSACTION_PURPOSE.name());
+				String paymentGateWay = transaction.getString(PaymentsCollection.PAYMENT_GATEWAY.name());
+				double totalAmount = transaction.getDouble(PaymentsCollection.TOTAL_AMOUNT.name());
+
+				TransactionData transactionDocument = new TransactionData(userName, totalAmount, transactionDate,
+						transactionId, Status.valueOf(transactionStatus),
+						TransactionPurpose.valueOf(transactionPurpose), PaymentGateway.valueOf(paymentGateWay));
+
+				transactionList.add(transactionDocument);
+			}
+		}
+
+		return transactionList;
+	}
+
+	public String getTrainId(String trainNameOrId) {
+
+		String trainId = null;
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> trainCollection = trainDatabase.getCollection(TrainBookingDatabase.TRAINS.name());
+
+			Document trainData = trainCollection.find(Filters.eq(TrainCollection.train_id.name(), trainNameOrId))
+					.first();
+
+			if (trainData != null) {
+
+				return trainData.getString(TrainCollection.train_id.name());
+			}
+
+			trainData = trainCollection.find(Filters.eq(TrainCollection.train_name.name(), trainNameOrId)).first();
+
+			if (trainData != null) {
+
+				return trainData.getString(TrainCollection.train_id.name());
+			}
+
+		}
+		return trainId;
+	}
+
+	public TrainData getTrainFullDetails(String trainId) {
+
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> trainScheduleCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.TRAIN_SCHEDULE.name());
+
+			Document trainDetails = trainScheduleCollection.find(Filters.eq(TRAIN_ID, trainId)).first();
+			System.out.println("train id : " + trainId);
+			String traiName = getTraiNamebyId(trainId);
+			Document fareKm = trainDetails.get("fare_per_km", Document.class);
+
+			double secondSittingFare = (double) fareKm.getOrDefault(ClassType.S2.name(), 0d);
+			double sleeperFare = (double) fareKm.getOrDefault(ClassType.SL.name(), 0d);
+			double thirdACFare = (double) fareKm.getOrDefault("3A", 0d);
+			double secondAcFare = (double) fareKm.getOrDefault("2A", 0d);
+			double firstAcFare = (double) fareKm.getOrDefault("1A", 0d);
+			double ccFare = (double) fareKm.getOrDefault(ClassType.CC.name(), 0d);
+			double ecFare = (double) fareKm.getOrDefault(ClassType.EC.name(), 0d);
+
+			FareAmount fareAmoutAllClass = new FareAmount(secondSittingFare, sleeperFare, thirdACFare, secondAcFare,
+					firstAcFare, ccFare, ecFare);
+
+			List<Document> routesArray = trainDetails.getList("routes", Document.class, new ArrayList<>());
+
+			Set<Routes> routesDetails = new TreeSet<>();
+
+			for (Document route : routesArray) {
+
+				String station = route.getString("station");
+				String arrival = route.getString("arrival");
+				String departure = route.getString("departure");
+				int distanceFromStart = route.getInteger("distance_from_start");
+
+				Routes currStationRoute = new Routes(station, arrival, departure, distanceFromStart);
+				routesDetails.add(currStationRoute);
+			}
+
+			List<String> availableDays = trainDetails.getList("available_days", String.class, new ArrayList<>());
+
+			return new TrainData(trainId, traiName, fareAmoutAllClass, routesDetails, availableDays);
+
+		}
+
+	}
+
+	private String getTraiNamebyId(String trainId) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase trainDatabase = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> trainsCollection = trainDatabase
+					.getCollection(TrainBookingDatabase.TRAINS.name());
+
+			return trainsCollection.find(Filters.eq(TRAIN_ID, trainId)).first().getString(TRAIN_NAME);
+
+		}
+
+	}
+
+	public String getUserNameByEmailId(String emailId) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> users = db.getCollection(TrainBookingDatabase.USERS.name());
+
+			// 1️⃣ Fetch existing user
+			Document existingUser = users.find(Filters.eq(UserCollection.EMAIL.name(), emailId)).first();
+
+			if (existingUser != null) {
+				return null;
+			}
+
+			return existingUser.getString(UserCollection.USER_NAME.name());
+		}
+
 	}
 
 }

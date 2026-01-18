@@ -20,14 +20,15 @@ String errorMessage = (exception != null) ? exception.getMessage() : "Unknown Se
 <link
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
-<link rel="stylesheet" href="error_500_page.css?v=2025">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/error_500_page.css?v=2025">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';
 	if (savedTheme === 'dark')
 		document.documentElement.setAttribute('data-theme', 'dark');
 </script>
-<script defer src="error_500_page.js?v=2025"></script>
+<script defer src="${pageContext.request.contextPath}/error_500_page.js?v=2025"></script>
 </head>
 <body>
 
@@ -68,8 +69,8 @@ String errorMessage = (exception != null) ? exception.getMessage() : "Unknown Se
 								class="ri-checkbox-circle-fill success-icon"></i></small>
 						</div>
 						<div class="divider"></div>
-						<a href="profile.jsp"><i class="ri-user-line"></i> My Profile</a>
-						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
+						<a href="ProfileUpdate"><i class="ri-user-line"></i> My Profile</a>
+						<a href="TransactionList"><i class="ri-exchange-dollar-line"></i>
 							My Transactions</a> <a href="MyBookings"><i
 							class="ri-history-line"></i> Booked Ticket History</a> <a
 							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket

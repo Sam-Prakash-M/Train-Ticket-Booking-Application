@@ -13,6 +13,7 @@
 	rel="stylesheet" />
 
 <link rel="stylesheet" href="booking.css?v=2025_2">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';
@@ -73,7 +74,7 @@
 			<div class="nav-links">
 				<a href="RailwayApplication.jsp"><i class="ri-home-5-line"></i>
 					Home</a> <a href="#" class="active"><i class="ri-train-line"></i>
-					Trains</a> <a href="pnrstatus.jsp"><i class="ri-qr-code-line"></i>
+					Trains</a> <a href="PnrStatus"><i class="ri-qr-code-line"></i>
 					PNR Status</a> <a href="charts.jsp"><i
 					class="ri-bar-chart-horizontal-line"></i> Charts</a>
 			</div>
@@ -101,11 +102,11 @@
 
 						<div class="menu-divider"></div>
 
-						<a href="profile.jsp" class="menu-item"> <i
+						<a href="ProfileUpdate" class="menu-item"> <i
 							class="ri-profile-line"></i> My Profile
-						</a> <a href="transactions.jsp" class="menu-item"> <i
+						</a> <a href="TransactionList" class="menu-item"> <i
 							class="ri-exchange-dollar-line"></i> My Transactions
-						</a> <a href="ticket_history.jsp" class="menu-item"> <i
+						</a> <a href="MyBookings" class="menu-item"> <i
 							class="ri-history-line"></i> Booked Ticket History
 						</a> <a href="refunds.jsp" class="menu-item"> <i
 							class="ri-refund-2-line"></i> Ticket Refund History

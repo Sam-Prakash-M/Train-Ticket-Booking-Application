@@ -16,6 +16,7 @@ String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase
 	href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
 	rel="stylesheet" />
 <link rel="stylesheet" href="Confirmation.css?v=2025_HEADER">
+<link rel="icon" type="image/png" href="train_logo_all.png">
 
 <script>
     const savedTheme = localStorage.getItem('sam_theme') || 'light';
@@ -79,8 +80,8 @@ String userInitial = isLoggedIn ? String.valueOf(userName.charAt(0)).toUpperCase
 								class="ri-checkbox-circle-fill success-icon"></i></small>
 						</div>
 						<div class="divider"></div>
-						<a href="profile.jsp"><i class="ri-user-line"></i> My Profile</a>
-						<a href="transactions.jsp"><i class="ri-exchange-dollar-line"></i>
+						<a href="ProfileUpdate"><i class="ri-user-line"></i> My Profile</a>
+						<a href="TransactionList"><i class="ri-exchange-dollar-line"></i>
 							My Transactions</a> <a href="MyBookings"><i
 							class="ri-history-line"></i> Booked Ticket History</a> <a
 							href="refunds.jsp"><i class="ri-refund-2-line"></i> Ticket

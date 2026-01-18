@@ -13,7 +13,7 @@
 	href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
 
 <link rel="stylesheet" href="register.css?v=2025_MOBILE">
-
+<link rel="icon" type="image/png" href="train_logo_all.png">
 <script>
 	const savedTheme = localStorage.getItem('sam_theme') || 'light';
 	if (savedTheme === 'dark')

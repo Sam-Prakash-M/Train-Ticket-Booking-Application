@@ -15,6 +15,8 @@ import com.paypal.orders.OrderRequest;
 import com.paypal.orders.OrdersCaptureRequest;
 import com.samprakash.basemodel.Status;
 import com.samprakash.paymentmodel.Passenger;
+import com.samprakash.paymentmodel.TransactionPurpose;
+import com.samprakash.paymentviewmodel.TransactionStatusHandler;
 import com.samprakash.ticketbookmodel.Ticket;
 import com.samprakash.ticketbookviewmodel.TicketBookingHelper;
 
@@ -38,7 +40,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response) {
 		HttpSession session = request.getSession();
 
-		String userID = (String) session.getAttribute("user_name");
+		String userName = (String) session.getAttribute("user_name");
 
 		String travelDate = (String) session.getAttribute("travelDate");
 		String trainName = (String) session.getAttribute("trainName");
@@ -53,6 +55,9 @@ public class PaymentSuccessServlet extends HttpServlet {
 		String email = (String) session.getAttribute("email");
 
 		Double totalAmount = (Double) session.getAttribute("total");
+		
+		
+		String transactionId = request.getParameter("order_id");
 
 		Set<Passenger> passengerDetails = getPassengerSet(request);
 
@@ -65,11 +70,13 @@ public class PaymentSuccessServlet extends HttpServlet {
 				request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
 				userTicket = new Ticket(travelDate, trainId, trainName, classType, source, destination,
 						Status.NOT_APPLICAPLE.name(), null, null, totalAmount);
-				TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID, mobile, email);
+				TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userName, mobile, email);
 				requestDispatcher.forward(request, response);
 			} else {
 				request.setAttribute("ConfirmedTicket", userTicket);
-				TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID, mobile, email);
+				TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userName, mobile, email);
+				TransactionStatusHandler.storeTransactionStatusInDb(totalAmount, transactionId, userName,
+						Status.SUCCESS, TransactionPurpose.GENERAL_TICKET_BOOKING,PaymentGateway.RAZORPAY);
 				requestDispatcher.forward(request, response);
 
 			}
@@ -146,7 +153,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 
 		HttpSession session = request.getSession();
 
-		String userID = (String) session.getAttribute("user_name");
+		String userName = (String) session.getAttribute("user_name");
 
 		String travelDate = (String) session.getAttribute("travelDate");
 		String trainName = (String) session.getAttribute("trainName");
@@ -164,7 +171,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 
 		Set<Passenger> passengerDetails = getPassengerSet(request);
 
-		if ("PAYPAL".equals(paymentSource) && token != null) {
+		if (PaymentGateway.PAYPAL.name().equals(paymentSource) && token != null) {
 			try {
 				// 1. Initialize Client
 				PayPalHttpClient client = PayPalClient.client();
@@ -195,11 +202,14 @@ public class PaymentSuccessServlet extends HttpServlet {
 						request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
 						userTicket = new Ticket(travelDate, trainId, trainName, classType, source, destination,
 								Status.NOT_APPLICAPLE.name(), null, null, totalAmount);
-						TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID, mobile, email);
+						TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userName, mobile,
+								email);
 						requestDispatcher.forward(request, response);
 					} else {
 						request.setAttribute("ConfirmedTicket", userTicket);
-						TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID, mobile, email);
+						TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userName, mobile, email);
+						TransactionStatusHandler.storeTransactionStatusInDb(totalAmount, transactionId, userName,
+								Status.SUCCESS, TransactionPurpose.GENERAL_TICKET_BOOKING,PaymentGateway.PAYPAL);
 						requestDispatcher.forward(request, response);
 
 					}
@@ -217,7 +227,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 					e1.printStackTrace();
 				}
 			}
-		} else if ("CASHFREE".equals(paymentSource)) {
+		} else if (PaymentGateway.CASH_FREE.name().equals(paymentSource)) {
 			String orderId = request.getParameter("order_id");
 
 			if (orderId == null) {
@@ -248,10 +258,11 @@ public class PaymentSuccessServlet extends HttpServlet {
 			// 2. Check if PAID
 			try {
 				if ("PAID".equals(order.getOrderStatus())) {
+					String transactionId = order.getCfOrderId();
 					request.setAttribute("status", "SUCCESS");
 					request.setAttribute("source", "Cashfree");
 					request.setAttribute("order_id", orderId);
-					request.setAttribute("payment_id", order.getCfOrderId()); // or payment_session_id
+					request.setAttribute("payment_id", transactionId); // or payment_session_id
 
 					Ticket userTicket = TicketBookingHelper.bookTicket(travelDate, passengerDetails, mobile, email,
 							trainName, trainId, totalAmount, source, destination, classType, isAutoUpgrade);
@@ -260,11 +271,14 @@ public class PaymentSuccessServlet extends HttpServlet {
 						request.setAttribute("errorMessage", "Ticket booking failed. Seats may not be available.");
 						userTicket = new Ticket(travelDate, trainId, trainName, classType, source, destination,
 								Status.NOT_APPLICAPLE.name(), null, null, totalAmount);
-						TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userID, mobile, email);
+						TicketBookingHelper.storeFailureBookingTransactionAmounInDB(userTicket, userName, mobile,
+								email);
 						requestDispatcher.forward(request, response);
 					} else {
 						request.setAttribute("ConfirmedTicket", userTicket);
-						TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userID, mobile, email);
+						TicketBookingHelper.storeConfirmedTicketInDB(userTicket, userName, mobile, email);
+						TransactionStatusHandler.storeTransactionStatusInDb(totalAmount, transactionId, userName,
+								Status.SUCCESS, TransactionPurpose.GENERAL_TICKET_BOOKING,PaymentGateway.CASH_FREE);
 						requestDispatcher.forward(request, response);
 
 					}
@@ -284,7 +298,7 @@ public class PaymentSuccessServlet extends HttpServlet {
 			try {
 				response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Invalid Access");
 			} catch (IOException e) {
-				
+
 				e.printStackTrace();
 			}
 
