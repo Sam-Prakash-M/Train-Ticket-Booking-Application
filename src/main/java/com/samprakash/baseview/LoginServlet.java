@@ -26,6 +26,7 @@ public class LoginServlet extends HttpServlet {
 		try {
 			String userName = request.getParameter("username");
 			String password = request.getParameter("password");
+			
 
 			if (userName == null || password == null) {
 				RequestDispatcher requestDispatcher = request.getRequestDispatcher("login.jsp?error=loggedOut");
