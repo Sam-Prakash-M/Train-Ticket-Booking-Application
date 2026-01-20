@@ -1,5 +1,7 @@
 package com.samprakash.profileviewmodel;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 import jakarta.mail.Authenticator;
@@ -12,8 +14,22 @@ import jakarta.mail.internet.MimeMessage;
 
 public class MailService {
 
-	private static String SENDER_EMAIL = "apitestdevelopment@gmail.com";
-	private static String APP_PASSWORD = "xgtlitnapfxusyyn";
+	private static String SENDER_EMAIL;
+	private static String APP_PASSWORD;
+
+	static {
+		try (InputStream in = MailService.class.getClassLoader().getResourceAsStream("googlemail.properties")) {
+			if (in == null)
+				throw new RuntimeException("googlemail.properties not found!");
+			final Properties MAIL_PROPERTIES = new Properties();
+			MAIL_PROPERTIES.load(in);
+			SENDER_EMAIL = MAIL_PROPERTIES.getProperty("user.mail", "");
+			APP_PASSWORD = MAIL_PROPERTIES.getProperty("user.apppassword", "");
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+	}
 
 	public static void sendOtpEmail(String recipientEmail, String otp) throws Exception {
 
