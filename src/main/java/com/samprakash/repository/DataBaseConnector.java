@@ -1458,7 +1458,7 @@ public class DataBaseConnector {
 			System.out.println("Current Password Hashed In DB : " + latestHashedPasswordfromDB);
 			System.out.println("Current Password Entered From Form  : " + currentPasswordPlain);
 
-			if (!Hashing.isPlainPasswordMatchedWithHashedPassword(currentPasswordPlain, latestHashedPasswordfromDB)) {
+			if (currentPasswordPlain != null && !Hashing.isPlainPasswordMatchedWithHashedPassword(currentPasswordPlain, latestHashedPasswordfromDB)) {
 
 				return Status.CURRENT_PASSWORD_MISMATCHED;
 			}
@@ -1809,6 +1809,7 @@ public class DataBaseConnector {
 	}
 
 	public String getUserNameByEmailId(String emailId) {
+		System.out.println("Emaild Id : " + emailId);
 		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
 
 			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
@@ -1818,11 +1819,47 @@ public class DataBaseConnector {
 			// 1️⃣ Fetch existing user
 			Document existingUser = users.find(Filters.eq(UserCollection.EMAIL.name(), emailId)).first();
 
-			if (existingUser != null) {
+			if (existingUser == null) {
 				return null;
 			}
 
 			return existingUser.getString(UserCollection.USER_NAME.name());
+		}
+
+	}
+
+	public String getUserPassword(String userName) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> users = db.getCollection(TrainBookingDatabase.USERS.name());
+
+			// 1️⃣ Fetch existing user
+			Document existingUser = users.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
+
+			if (existingUser == null) {
+				return null;
+			}
+
+			return existingUser.getString(UserCollection.HASHED_PASSWORD.name());
+		}
+	}
+
+	public String getEmailIdByUserName(String userName) {
+		try (MongoClient mongoClient = MongoClients.create(DB_PROPERTIES.getProperty(MONGO_DB_CONNECTION_URL))) {
+
+			MongoDatabase db = mongoClient.getDatabase(DB_PROPERTIES.getProperty(TRAIN_BOOKING_DB_NAME));
+
+			MongoCollection<Document> users = db.getCollection(TrainBookingDatabase.USERS.name());
+			// 1️⃣ Fetch existing user
+			Document existingUser = users.find(Filters.eq(UserCollection.USER_NAME.name(), userName)).first();
+
+			if (existingUser == null) {
+				return null;
+			}
+
+			return existingUser.getString(UserCollection.EMAIL.name());
 		}
 
 	}
