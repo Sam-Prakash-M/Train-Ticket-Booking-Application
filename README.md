@@ -295,7 +295,9 @@ Train-Ticket-Booking-Application/
     
 2.  **Import Maven Project:** Open your IDE and import as a Maven project to download dependencies.
     
-3.  Open src/main/java/com/samprakash/profileviewmodel/MailService.java and update:Javaprivate static final String SENDER\_EMAIL = "your-email@gmail.com";private static final String APP\_PASSWORD = "xxxx-xxxx-xxxx-xxxx"; // Google App Password
+3.  Open /Train-Ticket-Booking-Application/src/main/webapp/WEB-INF/classes/googlemail.properties and update 
+user.mail = "your-email@gmail.com";
+user.apppassword = "xxxx-xxxx-xxxx-xxxx"; // Google App Password
     
 4.  **Database Setup:** Ensure your DataBaseConnector.java points to your MongoDB instance.
     
