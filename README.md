@@ -25,7 +25,7 @@ A futuristic, high-performance web application for train ticket booking, PNR sta
     
 *   **Train Data Visualization:** Vertical timeline for routes and dynamic fare tables.
     
-*   **Chart Vacancy:** View chart preparation status and vacant berths.
+*   **Chart Vacancy:** View chart preparation status and vacant berths.(Under Development)
     
 
 ### 🔐 Advanced Security & Auth
@@ -97,42 +97,181 @@ Supports three major payment gateways for ticket booking:
     
 
 📂 Project Structure
---------------------  
-```SamRailways/  
-├── src/main/java/com/samprakash/  │   
-├── basemodel/          # Enums (Status, etc.)  
-│   
-├── trainmodel/         # POJOs (TrainData, FareAmount, Routes)  
-│   ├
-── trainview/          # Servlets (Search, PNR, TrainData)  
-│  
-├── trainviewmodel/     # Business Logic & DB Connectors  
-│   
-├── profileview/        # Auth Servlets (Login, ForgotPassword)  
-│   
-├── profileviewmodel/   # User Logic (UserViewModel, MailService)  
-│   └── trainutil/          # Utilities (EmailService, DateUtils)  
-│ 
-├── src/main/webapp/  
-│   
-├── css/                # Styles (ticketsearch.css, forgotPassword.css)  
-│   
-├── js/                 # Logic (ticketsearch.js, forgotPassword.js)  
-│  
-├── WEB-INF/            # web.xml  
-│   
-├── ticketsearch.jsp    # Main Dashboard  
-│   
-├── TrainData.jsp       # Train Info Page  
-│   
-├── login.jsp           # Login Page  
-│   
-├── forgotPassword.jsp  # Password Reset Flow  
-│   
-├── forgotUsername.jsp  # Username Recovery Flow  
-│  
-└── cashfreeCheckout.jsp # Payment Page  
-└── pom.xml                 # Dependencies  
+-------------------- 
+
+ 
+```SamRailways/
+Train-Ticket-Booking-Application/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── samprakash/
+│   │   │           ├── basemodel/                  # [CORE ENUMS & RECORDS]
+│   │   │           │   ├── Status.java
+│   │   │           │   ├── TrainBookingDatabase.java
+│   │   │           │   ├── TrainCollection.java
+│   │   │           │   ├── UserCollection.java
+│   │   │           │   └── Users.java
+│   │   │           │
+│   │   │           ├── baseview/                   # [CORE SERVLETS]
+│   │   │           │   ├── BookingServlet.java
+│   │   │           │   ├── LoginServlet.java
+│   │   │           │   ├── LogoutServlet.java
+│   │   │           │   └── RegisterServlet.java
+│   │   │           │
+│   │   │           ├── baseviewmodel/              # [CORE LOGIC]
+│   │   │           │   ├── Hashing.java
+│   │   │           │   └── TrainDataFetcher.java
+│   │   │           │
+│   │   │           ├── cancelticketview/           # [CANCELLATION SERVLET]
+│   │   │           │   └── CancelTicketServlet.java
+│   │   │           │
+│   │   │           ├── cancelticketviewmodel/      # [CANCELLATION LOGIC]
+│   │   │           │   └── CancelTicketViewModel.java
+│   │   │           │
+│   │   │           ├── exception/                  # [CUSTOM EXCEPTIONS]
+│   │   │           │   └── SeatNotAvailableException.java
+│   │   │           │
+│   │   │           ├── jerseyconfig/               # [REST CONFIG]
+│   │   │           │   └── JerseyConfig.java
+│   │   │           │
+│   │   │           ├── paymentmodel/               # [PAYMENT DATA]
+│   │   │           │   ├── Passenger.java
+│   │   │           │   ├── PaymentsCollection.java
+│   │   │           │   └── TransactionPurpose.java
+│   │   │           │
+│   │   │           ├── paymentview/                # [PAYMENT GATEWAYS]
+│   │   │           │   ├── cashfreeview/
+│   │   │           │   │   └── CashFreeClientView.java
+│   │   │           │   ├── paypalview/
+│   │   │           │   │   └── PayPalClientView.java
+│   │   │           │   ├── razorpayview/
+│   │   │           │   │   └── RazorPayClientView.java
+│   │   │           │   ├── CashfreeClient.java
+│   │   │           │   ├── PaymentGateway.java     # Enum
+│   │   │           │   ├── PaymentServlet.java
+│   │   │           │   ├── PaymentSuccessServlet.java
+│   │   │           │   └── PayPalClient.java
+│   │   │           │
+│   │   │           ├── paymentviewmodel/           # [PAYMENT LOGIC]
+│   │   │           │   └── TransactionStatusHandler.java
+│   │   │           │
+│   │   │           ├── pnrview/                    # [PNR SERVLET]
+│   │   │           │   └── PnrStatusView.java
+│   │   │           │
+│   │   │           ├── pnrviewmodel/               # [PNR LOGIC]
+│   │   │           │   └── PnrStatusViewModel.java
+│   │   │           │
+│   │   │           ├── profilemodel/               # [PROFILE DATA]
+│   │   │           │   └── TransactionData.java
+│   │   │           │
+│   │   │           ├── profileview/                # [PROFILE & AUTH SERVLETS]
+│   │   │           │   ├── ForgotPasswordServlet.java
+│   │   │           │   ├── ForgotUsernameServlet.java
+│   │   │           │   ├── PasswordUpdateView.java
+│   │   │           │   ├── ProfileUpdate.java
+│   │   │           │   └── TransactionView.java
+│   │   │           │
+│   │   │           ├── profileviewmodel/           # [PROFILE LOGIC]
+│   │   │           │   ├── MailService.java
+│   │   │           │   ├── PasswordUpdateViewModel.java
+│   │   │           │   ├── ProfileUpdateViewModel.java
+│   │   │           │   ├── TransactionViewModel.java
+│   │   │           │   └── UserViewModel.java
+│   │   │           │
+│   │   │           ├── repository/                 # [DB CONNECTION]
+│   │   │           │   └── DataBaseConnector.java
+│   │   │           │
+│   │   │           ├── searchview/                 # [SEARCH SERVLET]
+│   │   │           │   └── SearchServlet.java
+│   │   │           │
+│   │   │           ├── searchviewmodel/            # [SEARCH API]
+│   │   │           │   └── SearchRestApi.java
+│   │   │           │
+│   │   │           ├── ticketbookmodel/            # [TICKET DATA]
+│   │   │           │   ├── BookingData.java
+│   │   │           │   ├── BookingState.java
+│   │   │           │   ├── PassengerCollection.java
+│   │   │           │   ├── Payements.java
+│   │   │           │   ├── SeatCounts.java
+│   │   │           │   ├── SeatMetaData.java
+│   │   │           │   ├── Ticket.java
+│   │   │           │   └── TicketStatus.java
+│   │   │           │
+│   │   │           ├── ticketbookview/             # [BOOKING VIEW SERVLETS]
+│   │   │           │   ├── BookingViewServlet.java
+│   │   │           │   ├── PrintTicketServlet.java
+│   │   │           │   └── QRServlet.java
+│   │   │           │
+│   │   │           ├── ticketbookviewmodel/        # [BOOKING LOGIC]
+│   │   │           │   └── TicketBookingHelper.java
+│   │   │           │
+│   │   │           ├── trainmodel/                 # [TRAIN DATA]
+│   │   │           │   ├── ClassType.java
+│   │   │           │   ├── Days.java
+│   │   │           │   ├── FareAmount.java
+│   │   │           │   ├── Routes.java
+│   │   │           │   └── TrainData.java
+│   │   │           │
+│   │   │           ├── trainview/                  # [TRAIN INFO SERVLET]
+│   │   │           │   └── TrainView.java
+│   │   │           │
+│   │   │           └── trainviewmodel/             # [TRAIN LOGIC]
+│   │   │               └── TrainViewModel.java
+│   │   │
+│   │   └── resources/
+│   │       ├── cashfree.properties
+│   │       ├── googlemail.properties
+│   │       ├── paypal.properties
+│   │       └── razorpayprops.properties
+│   │
+│   └── webapp/
+│       ├── css/
+│       │   ├── ticketsearch.css
+│       │   ├── TrainData.css
+│       │   ├── forgotPassword.css
+│       │   ├── forgotUsername.css
+│       │   ├── login.css
+│       │   └── register.css
+│       │
+│       ├── js/
+│       │   ├── ticketsearch.js
+│       │   ├── TrainData.js
+│       │   ├── forgotPassword.js
+│       │   ├── forgotUsername.js
+│       │   ├── login.js
+│       │   └── register.js
+│       │
+│       ├── images/
+│       │   └── train_logo_all.png
+│       │
+│       ├── WEB-INF/
+│       │   ├── web.xml
+│       │   └── lib/ (gson, mongo, mail, paypal-sdk, razorpay, etc.)
+│       │
+│       ├── ticketsearch.jsp            # Dashboard
+│       ├── TrainData.jsp               # Train Info
+│       ├── login.jsp                   # Login
+│       ├── register.jsp                # Register
+│       ├── forgotPassword.jsp          # Password Recovery
+│       ├── forgotUsername.jsp          # Username Recovery
+│       ├── cashfreeCheckout.jsp        # Payment
+│       ├── razorpayCheckout.jsp        # Payment
+│       ├── payment.jsp                 # Payment Options (Implicitly referenced)
+│       ├── UserBookings.jsp            # History
+│       ├── refunds.jsp                 # Refunds
+│       ├── ProfileUpdate.jsp           # Profile
+│       ├── TransactionList.jsp         # Transactions
+│       ├── TransactionView.jsp         # Transaction View Container
+│       ├── TicketBookingConfirmation.jsp # Success Page
+│       ├── booking.jsp                 # Search Results Container
+│       ├── Confirmation.jsp            # Pre-booking confirmation
+│       ├── PrintTicket.jsp             # Print View
+│       └── PnrStatusView.jsp           # PNR Result View
+│
+└── pom.xml					       #Maven Dependencies
+
 ```
 
 
@@ -167,46 +306,109 @@ Supports three major payment gateways for ticket booking:
     
 2.  Select **Tomcat v10.0**.
     
-3.  Access via: http://localhost:8080/TrainTicketBookingApplication/ticketsearch.jsp
+3.  Access via: http://localhost:8080/TrainTicketBookingApplication/RailwayApplication.jsp
     
-
-🔌 API Endpoints (Servlets)
----------------------------
-
-**EndpointMethodDescription**/SearchServletGETSearches for trains./PnrStatusGET (AJAX)Returns PNR status JSON./TrainDataGET (AJAX)Returns train details JSON./ForgotPasswordServletPOST (AJAX)Actions: checkUsername, sendOtp, verifyOtp, resetPassword./ForgotUsernameServletPOST (AJAX)Actions: sendOtp, verifyOtp./PaymentServletPOSTHandles payment gateway callbacks.
 
 📊 Class Diagram (Simplified)
 -----------------------------
 
-   classDiagram      
-```class SearchServlet {          +doGet()      }      
-class ForgotPasswordServlet {
-       +doPost()
-       -action: checkUsername
-       -action: sendOtp
-       -action: verifyOtp
- }     
-class UserViewModel {
-       +getUserNameByEmailId()
-      +getEmailIdByUserName()
-      +updateUserPassword()
- }      
-class MailService {
-      +sendOtpEmail()
- }
- class TrainViewModel {
-       +getTrainDetails()
-       +getPnrStatus()
- }      
-class DataBaseConnector {
-      +getConnection()
-}
- ForgotPasswordServlet --> UserViewModel : Uses
- ForgotPasswordServlet --> MailService : Uses
- SearchServlet --> TrainViewModel : Uses
- UserViewModel --> DataBaseConnector : Connects
- TrainViewModel --> DataBaseConnector : Connects   
-```
+classDiagram
+
+    %% --- REPOSITORY LAYER (SINGLETON) ---
+    class DataBaseConnector {
+        -static instance: DataBaseConnector
+        +getInstance(): DataBaseConnector
+        +addUser(Users)
+        +isUserCredentialIsCorrect(user, pass)
+        +getMatchedTrain(source, dest, date)
+        +getTicketByPNR(pnr)
+        +cancelAndPromoteTickets(pnr, passengers)
+        +storeBookingStateInDB(bookingData)
+        +storeTransactionStatusInDb(...)
+    }
+
+    %% --- CONTROLLERS (SERVLETS) ---
+    class LoginServlet { +doPost() }
+    class RegisterServlet { +doPost() }
+    class SearchServlet { +doGet() }
+    class TrainView { +doGet() }
+    class PnrStatusView { +doGet() }
+    class PaymentServlet { +doPost() }
+    class PaymentSuccessServlet { +doPost() }
+    class CancelTicketServlet { +doPost() }
+    class ForgotPasswordServlet { +doPost() }
+    class ForgotUsernameServlet { +doPost() }
+    class ProfileUpdate { +doPost() }
+    
+    %% --- VIEW MODELS (BUSINESS LOGIC) ---
+    class TrainDataFetcher {
+        +getMatchedTrain()
+        +getSeatAvailabilityForTrain()
+    }
+    class TicketBookingHelper {
+        +bookTicket()
+        +storeConfirmedTicketInDB()
+    }
+    class UserViewModel {
+        +getUserNameByEmailId()
+        +updateUserPassword()
+    }
+    class CancelTicketViewModel {
+        +CancelTicket()
+    }
+    class PnrStatusViewModel {
+        +getBookingDetails()
+    }
+    class TransactionStatusHandler {
+        +storeTransactionStatusInDb()
+    }
+
+    %% --- UTILITIES ---
+    class MailService {
+        +sendOtpEmail(email, otp)
+    }
+    class Hashing {
+        +getHashedPassword()
+        +checkPassword()
+    }
+
+    %% --- PAYMENT CLIENTS ---
+    class CashfreeClient { +init() }
+    class PayPalClient { +client() }
+    
+    %% --- RELATIONSHIPS ---
+    %% Auth Flow
+    LoginServlet --> DataBaseConnector
+    RegisterServlet --> Hashing
+    RegisterServlet --> DataBaseConnector
+    
+    %% Search Flow
+    SearchServlet --> TrainDataFetcher
+    TrainDataFetcher --> DataBaseConnector
+    
+    %% Train Info & PNR
+    TrainView --> TrainViewModel
+    PnrStatusView --> PnrStatusViewModel
+    PnrStatusViewModel --> DataBaseConnector
+    
+    %% Booking & Payment Flow
+    PaymentServlet --> PayPalClient
+    PaymentServlet --> CashfreeClient
+    PaymentSuccessServlet --> TicketBookingHelper
+    PaymentSuccessServlet --> TransactionStatusHandler
+    TicketBookingHelper --> DataBaseConnector
+    TransactionStatusHandler --> DataBaseConnector
+    
+    %% Recovery Flow
+    ForgotPasswordServlet --> MailService
+    ForgotPasswordServlet --> UserViewModel
+    ForgotUsernameServlet --> MailService
+    ForgotUsernameServlet --> UserViewModel
+    UserViewModel --> DataBaseConnector
+    
+    %% Cancellation
+    CancelTicketServlet --> CancelTicketViewModel
+    CancelTicketViewModel --> DataBaseConnector
 📜 License
 ----------
 
